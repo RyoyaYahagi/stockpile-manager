@@ -294,7 +294,11 @@
 
   <script>
     const STORAGE_KEY = 'stockpile_items';
-    const NOTIFICATION_DAYS = 7;
+    const NOTIFICATION_THRESHOLDS = [
+      { days: 30, flag: 'notified_30', label: '30日前' },
+      { days: 7, flag: 'notified_7', label: '7日前' },
+      { days: 1, flag: 'notified_1', label: '前日' }
+    ];
     let lastOcrText = null;
 
     // 初期化
@@ -378,6 +382,9 @@
         name: name,
         expiry_date: expiryDate,
         ocr_text: lastOcrText || null,
+        notified_30: false,
+        notified_7: false,
+        notified_1: false,
         created_at: new Date().toISOString()
       });
 
@@ -482,20 +489,25 @@
       if (!('Notification' in window) || Notification.permission !== 'granted') return;
 
       const items = getItems();
-      const expiringItems = items.filter(item => {
+      let updated = false;
+
+      items.forEach(item => {
         const daysLeft = getDaysUntilExpiry(item.expiry_date);
-        return daysLeft >= 0 && daysLeft <= NOTIFICATION_DAYS;
+
+        NOTIFICATION_THRESHOLDS.forEach(threshold => {
+          if (daysLeft <= threshold.days && daysLeft >= 0 && !item[threshold.flag]) {
+            new Notification('備蓄品の期限通知', {
+              body: `「${item.name}」の期限が近づいています（${item.expiry_date}、${threshold.label}）`,
+              icon: '🎒'
+            });
+            item[threshold.flag] = true;
+            updated = true;
+          }
+        });
       });
 
-      if (expiringItems.length > 0) {
-        const message = expiringItems.length === 1
-          ? `「${expiringItems[0].name}」の期限が近づいています`
-          : `${expiringItems.length}件の備蓄品の期限が近づいています`;
-
-        new Notification('備蓄品の期限通知', {
-          body: message,
-          icon: '🎒'
-        });
+      if (updated) {
+        saveItems(items);
       }
     }
 
