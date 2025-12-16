@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>備蓄品管理</title>
   <meta name="description" content="非常袋の備蓄品と賞味期限を管理するアプリ">
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     * {
       box-sizing: border-box;
@@ -57,7 +59,7 @@
       padding: 16px;
       margin-bottom: 12px;
       border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -111,7 +113,7 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0,0,0,0.5);
+      background: rgba(0, 0, 0, 0.5);
       justify-content: center;
       align-items: center;
       z-index: 1000;
@@ -208,8 +210,46 @@
       cursor: pointer;
       margin-top: 8px;
     }
+
+    /* OCR関連 */
+    .ocr-section {
+      margin-bottom: 16px;
+      padding: 12px;
+      background: #f8f9fa;
+      border-radius: 6px;
+      border: 1px dashed #ddd;
+    }
+
+    .ocr-upload-btn {
+      display: inline-block;
+      padding: 8px 16px;
+      background: #9b59b6;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .ocr-upload-btn:hover {
+      background: #8e44ad;
+    }
+
+    .ocr-status {
+      margin-top: 8px;
+      font-size: 13px;
+      color: #666;
+    }
+
+    .ocr-status.success {
+      color: #27ae60;
+    }
+
+    .ocr-status.error {
+      color: #e74c3c;
+    }
   </style>
 </head>
+
 <body>
   <div class="container">
     <h1>🎒 備蓄品管理</h1>
@@ -234,6 +274,12 @@
           <label for="name">品名</label>
           <input type="text" id="name" required placeholder="例: 水 2L × 6本">
         </div>
+        <div class="form-group ocr-section">
+          <label>📷 写真から日付を読み取る（任意）</label>
+          <input type="file" id="ocrImage" accept="image/*" style="display:none" onchange="handleOcrUpload(event)">
+          <label for="ocrImage" class="ocr-upload-btn">写真を選択</label>
+          <p id="ocrStatus" class="ocr-status"></p>
+        </div>
         <div class="form-group">
           <label for="expiryDate">賞味期限</label>
           <input type="date" id="expiryDate" required>
@@ -249,6 +295,7 @@
   <script>
     const STORAGE_KEY = 'stockpile_items';
     const NOTIFICATION_DAYS = 7;
+    let lastOcrText = null;
 
     // 初期化
     document.addEventListener('DOMContentLoaded', () => {
@@ -330,6 +377,7 @@
         id: generateId(),
         name: name,
         expiry_date: expiryDate,
+        ocr_text: lastOcrText || null,
         created_at: new Date().toISOString()
       });
 
@@ -337,6 +385,8 @@
       renderItems();
       closeModal();
       document.getElementById('itemForm').reset();
+      document.getElementById('ocrStatus').textContent = '';
+      lastOcrText = null;
     }
 
     // 備蓄品削除
@@ -356,6 +406,58 @@
 
     function closeModal() {
       document.getElementById('modal').classList.remove('active');
+      document.getElementById('ocrStatus').textContent = '';
+      lastOcrText = null;
+    }
+
+    // OCR処理
+    async function handleOcrUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const statusEl = document.getElementById('ocrStatus');
+      statusEl.className = 'ocr-status';
+      statusEl.textContent = '読み取り中...';
+
+      try {
+        const result = await Tesseract.recognize(file, 'jpn+eng');
+        const dateStr = extractDateFromText(result.data.text);
+        lastOcrText = result.data.text;
+
+        if (dateStr) {
+          document.getElementById('expiryDate').value = dateStr;
+          statusEl.className = 'ocr-status success';
+          statusEl.textContent = '日付を検出しました（確認してください）';
+        } else {
+          statusEl.className = 'ocr-status error';
+          statusEl.textContent = '日付が見つかりませんでした';
+        }
+      } catch (err) {
+        console.error('OCR error:', err);
+        statusEl.className = 'ocr-status error';
+        statusEl.textContent = 'エラーが発生しました';
+      }
+
+      event.target.value = '';
+    }
+
+    // 日付抽出
+    function extractDateFromText(text) {
+      const patterns = [
+        /(\d{4})[-\/\.](\d{1,2})[-\/\.](\d{1,2})/,
+        /(\d{4})年(\d{1,2})月(\d{1,2})日/
+      ];
+
+      for (const pattern of patterns) {
+        const match = text.match(pattern);
+        if (match) {
+          const year = match[1];
+          const month = String(match[2]).padStart(2, '0');
+          const day = String(match[3]).padStart(2, '0');
+          return `${year}-${month}-${day}`;
+        }
+      }
+      return null;
     }
 
     // 通知関連
@@ -433,4 +535,5 @@
     });
   </script>
 </body>
+
 </html>
