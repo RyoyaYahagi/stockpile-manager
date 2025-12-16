@@ -301,6 +301,15 @@
     ];
     let lastOcrText = null;
 
+    // LINE User IDをLocalStorageから取得
+    function getLineUserId() {
+      return localStorage.getItem('line_user_id') || null;
+    }
+
+    function setLineUserId(userId) {
+      localStorage.setItem('line_user_id', userId);
+    }
+
     // 初期化
     document.addEventListener('DOMContentLoaded', () => {
       renderItems();
@@ -382,6 +391,7 @@
         name: name,
         expiry_date: expiryDate,
         ocr_text: lastOcrText || null,
+        line_user_id: getLineUserId(),
         notified_30: false,
         notified_7: false,
         notified_1: false,
@@ -496,10 +506,15 @@
 
         NOTIFICATION_THRESHOLDS.forEach(threshold => {
           if (daysLeft <= threshold.days && daysLeft >= 0 && !item[threshold.flag]) {
+            // Web Notification
             new Notification('備蓄品の期限通知', {
               body: `「${item.name}」の期限が近づいています（${item.expiry_date}、${threshold.label}）`,
               icon: '🎒'
             });
+
+            // LINE通知（追加）
+            sendLineNotification(item.line_user_id || getLineUserId(), item.name, item.expiry_date, threshold.label);
+
             item[threshold.flag] = true;
             updated = true;
           }
@@ -508,6 +523,23 @@
 
       if (updated) {
         saveItems(items);
+      }
+    }
+
+    // LINE通知送信
+    async function sendLineNotification(userId, itemName, expiryDate, label) {
+      if (!userId) return;
+
+      const message = `【備蓄品の期限通知】\n「${itemName}」の期限が近づいています\n期限: ${expiryDate}\n（${label}）`;
+
+      try {
+        await fetch('/api/line/notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, message })
+        });
+      } catch (err) {
+        console.error('LINE notification error:', err);
       }
     }
 

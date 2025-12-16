@@ -1,0 +1,13 @@
+{
+  "name": "stockpile-manager",
+  "version": "1.0.0",
+  "description": "非常袋の備蓄品と賞味期限を管理するアプリ",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "dotenv": "^16.3.1"
+  }
+}
