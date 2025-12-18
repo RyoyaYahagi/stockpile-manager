@@ -357,7 +357,7 @@
         if (daysLeft < 0) {
           statusClass = 'warning';
           statusText = `（${Math.abs(daysLeft)}日経過）`;
-        } else if (daysLeft <= NOTIFICATION_DAYS) {
+        } else if (daysLeft <= 7) {
           statusClass = 'soon';
           statusText = `（あと${daysLeft}日）`;
         }
@@ -508,8 +508,7 @@
           if (daysLeft <= threshold.days && daysLeft >= 0 && !item[threshold.flag]) {
             // Web Notification
             new Notification('備蓄品の期限通知', {
-              body: `「${item.name}」の期限が近づいています（${item.expiry_date}、${threshold.label}）`,
-              icon: '🎒'
+              body: `「${item.name}」の期限が近づいています（${item.expiry_date}、${threshold.label}）`
             });
 
             // LINE通知（追加）
