@@ -10,7 +10,7 @@ const PORT = process.env.PORT || 3000;
 // LINE通知送信API
 app.post('/api/line/notify', async (req, res) => {
   const { userId, message } = req.body;
-  
+
   if (!userId || !message) {
     return res.status(400).json({ error: 'Missing userId or message' });
   }
@@ -49,7 +49,7 @@ app.post('/api/line/notify', async (req, res) => {
 // LINE Webhook（友だち追加時にuser_id取得）
 app.post('/api/line/webhook', (req, res) => {
   const events = req.body.events || [];
-  
+
   events.forEach(event => {
     if (event.type === 'follow') {
       // 友だち追加時にuser_idをログ出力
@@ -59,7 +59,7 @@ app.post('/api/line/webhook', (req, res) => {
       console.log('=================================');
     }
   });
-  
+
   // LINE Webhookは常に200を返す必要がある
   res.status(200).end();
 });
@@ -67,17 +67,25 @@ app.post('/api/line/webhook', (req, res) => {
 // LINE User ID 設定用API
 app.post('/api/line/set-user-id', (req, res) => {
   const { userId } = req.body;
-  
+
   if (!userId) {
     return res.status(400).json({ error: 'Missing userId' });
   }
-  
+
   // クライアント側でLocalStorageに保存するので、ここでは受け取るだけ
   res.json({ success: true, userId });
 });
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
+  console.log('');
+  // デバッグ: トークン設定確認
+  if (process.env.LINE_CHANNEL_ACCESS_TOKEN) {
+    console.log('✅ LINE_CHANNEL_ACCESS_TOKEN is configured');
+  } else {
+    console.log('❌ LINE_CHANNEL_ACCESS_TOKEN is NOT configured');
+    console.log('   .envファイルを確認してください');
+  }
   console.log('');
   console.log('【LINE連携の設定手順】');
   console.log('1. LINE Developers Consoleでチャネル作成');
