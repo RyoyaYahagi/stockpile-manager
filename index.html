@@ -247,6 +247,65 @@
     .ocr-status.error {
       color: #e74c3c;
     }
+
+    /* 袋管理 */
+    .bag-section {
+      margin-bottom: 20px;
+      padding: 16px;
+      background: #e8f4fd;
+      border-radius: 8px;
+    }
+
+    .bag-section h3 {
+      font-size: 14px;
+      margin-bottom: 12px;
+      color: #2c3e50;
+    }
+
+    .bag-form {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .bag-form input {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .bag-form button {
+      padding: 8px 16px;
+      background: #27ae60;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .bag-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .bag-tag {
+      display: inline-block;
+      padding: 4px 10px;
+      background: #3498db;
+      color: white;
+      border-radius: 12px;
+      font-size: 12px;
+    }
+
+    .item-meta {
+      font-size: 12px;
+      color: #888;
+      margin-top: 4px;
+    }
   </style>
 </head>
 
@@ -260,6 +319,16 @@
     </div>
 
     <button class="add-button" onclick="openModal()">+ 備蓄品を追加</button>
+
+    <!-- 袋管理セクション -->
+    <div class="bag-section">
+      <h3>💼 袋管理</h3>
+      <div class="bag-form">
+        <input type="text" id="newBagName" placeholder="新しい袋の名前（例: 玄関用）">
+        <button type="button" onclick="addBag()">追加</button>
+      </div>
+      <div id="bagList" class="bag-list"></div>
+    </div>
 
     <ul id="itemList" class="item-list"></ul>
     <p id="emptyMessage" class="empty-message">備蓄品がありません</p>
@@ -284,6 +353,16 @@
           <label for="expiryDate">賞味期限</label>
           <input type="date" id="expiryDate" required>
         </div>
+        <div class="form-group">
+          <label for="bagId">袋（任意）</label>
+          <select id="bagId">
+            <option value="">未指定</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="locationNote">場所メモ（任意）</label>
+          <input type="text" id="locationNote" placeholder="例: 外ポケット、上段">
+        </div>
         <div class="modal-buttons">
           <button type="button" class="cancel-button" onclick="closeModal()">キャンセル</button>
           <button type="submit" class="save-button">保存</button>
@@ -294,6 +373,7 @@
 
   <script>
     const STORAGE_KEY = 'stockpile_items';
+    const BAGS_STORAGE_KEY = 'stockpile_bags';
     const NOTIFICATION_THRESHOLDS = [
       { days: 30, flag: 'notified_30', label: '30日前' },
       { days: 7, flag: 'notified_7', label: '7日前' },
@@ -312,6 +392,7 @@
 
     // 初期化
     document.addEventListener('DOMContentLoaded', () => {
+      renderBags();
       renderItems();
       checkNotificationPermission();
       checkExpiringItems();
@@ -325,6 +406,46 @@
 
     function saveItems(items) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    }
+
+    // 袋管理
+    function getBags() {
+      const data = localStorage.getItem(BAGS_STORAGE_KEY);
+      return data ? JSON.parse(data) : [];
+    }
+
+    function saveBags(bags) {
+      localStorage.setItem(BAGS_STORAGE_KEY, JSON.stringify(bags));
+    }
+
+    function addBag() {
+      const nameInput = document.getElementById('newBagName');
+      const name = nameInput.value.trim();
+      if (!name) return;
+
+      const bags = getBags();
+      bags.push({
+        id: generateId(),
+        name: name
+      });
+      saveBags(bags);
+      nameInput.value = '';
+      renderBags();
+    }
+
+    function renderBags() {
+      const bags = getBags();
+      const listEl = document.getElementById('bagList');
+      const selectEl = document.getElementById('bagId');
+
+      // 袋一覧表示
+      listEl.innerHTML = bags.map(bag =>
+        `<span class="bag-tag">${escapeHtml(bag.name)}</span>`
+      ).join('');
+
+      // プルダウン更新
+      selectEl.innerHTML = '<option value="">未指定</option>' +
+        bags.map(bag => `<option value="${bag.id}">${escapeHtml(bag.name)}</option>`).join('');
     }
 
     // UUID生成
@@ -362,6 +483,12 @@
           statusText = `（あと${daysLeft}日）`;
         }
 
+        // 袋・場所情報
+        const bag = item.bag_id ? getBags().find(b => b.id === item.bag_id) : null;
+        const bagName = bag ? bag.name : '未指定';
+        const locationNote = item.location_note || '';
+        const metaText = locationNote ? `${bagName} / ${locationNote}` : bagName;
+
         return `
           <li class="item">
             <div class="item-info">
@@ -369,6 +496,7 @@
               <p class="${statusClass}">
                 期限: ${formatDate(item.expiry_date)} ${statusText}
               </p>
+              <p class="item-meta">💼 ${escapeHtml(metaText)}</p>
             </div>
             <button class="delete-button" onclick="deleteItem('${item.id}')">削除</button>
           </li>
@@ -392,6 +520,8 @@
         expiry_date: expiryDate,
         ocr_text: lastOcrText || null,
         line_user_id: getLineUserId(),
+        bag_id: document.getElementById('bagId').value || null,
+        location_note: document.getElementById('locationNote').value.trim() || null,
         notified_30: false,
         notified_7: false,
         notified_1: false,
