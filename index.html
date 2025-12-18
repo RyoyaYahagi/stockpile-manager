@@ -7,6 +7,7 @@
   <title>備蓄品管理</title>
   <meta name="description" content="非常袋の備蓄品と賞味期限を管理するアプリ">
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
   <style>
     * {
       box-sizing: border-box;
@@ -97,6 +98,38 @@
 
     .delete-button:hover {
       background: #c0392b;
+    }
+
+    .item-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .log-button {
+      border: none;
+      padding: 6px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .log-button.consume {
+      background: #f39c12;
+      color: white;
+    }
+
+    .log-button.consume:hover {
+      background: #d68910;
+    }
+
+    .log-button.refill {
+      background: #27ae60;
+      color: white;
+    }
+
+    .log-button.refill:hover {
+      background: #1e8449;
     }
 
     .empty-message {
@@ -374,6 +407,7 @@
   <script>
     const STORAGE_KEY = 'stockpile_items';
     const BAGS_STORAGE_KEY = 'stockpile_bags';
+    const LOGS_STORAGE_KEY = 'stockpile_logs';
     const NOTIFICATION_THRESHOLDS = [
       { days: 30, flag: 'notified_30', label: '30日前' },
       { days: 7, flag: 'notified_7', label: '7日前' },
@@ -448,6 +482,27 @@
         bags.map(bag => `<option value="${bag.id}">${escapeHtml(bag.name)}</option>`).join('');
     }
 
+    // ログ管理
+    function getLogs() {
+      const data = localStorage.getItem(LOGS_STORAGE_KEY);
+      return data ? JSON.parse(data) : [];
+    }
+
+    function saveLogs(logs) {
+      localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify(logs));
+    }
+
+    function addLog(itemId, type) {
+      const logs = getLogs();
+      logs.push({
+        id: generateId(),
+        item_id: itemId,
+        type: type,
+        created_at: new Date().toISOString()
+      });
+      saveLogs(logs);
+    }
+
     // UUID生成
     function generateId() {
       return Date.now().toString(36) + Math.random().toString(36).substr(2);
@@ -498,7 +553,11 @@
               </p>
               <p class="item-meta">💼 ${escapeHtml(metaText)}</p>
             </div>
-            <button class="delete-button" onclick="deleteItem('${item.id}')">削除</button>
+            <div class="item-actions">
+              <button class="log-button consume" onclick="addLog('${item.id}', 'consume')">消費</button>
+              <button class="log-button refill" onclick="addLog('${item.id}', 'refill')">補充</button>
+              <button class="delete-button" onclick="deleteItem('${item.id}')">削除</button>
+            </div>
           </li>
         `;
       }).join('');
@@ -568,6 +627,7 @@
 
       try {
         const result = await Tesseract.recognize(file, 'jpn+eng');
+        console.log('OCR recognized text:', result.data.text);
         const dateStr = extractDateFromText(result.data.text);
         lastOcrText = result.data.text;
 
@@ -582,23 +642,34 @@
       } catch (err) {
         console.error('OCR error:', err);
         statusEl.className = 'ocr-status error';
-        statusEl.textContent = 'エラーが発生しました';
+        statusEl.textContent = 'エラーが発生しました（JPG/PNG形式で再試行してください）';
       }
 
       event.target.value = '';
     }
 
+
     // 日付抽出
     function extractDateFromText(text) {
+      // 全角数字を半角に変換
+      const normalized = text.replace(/[０-９]/g, s =>
+        String.fromCharCode(s.charCodeAt(0) - 0xFEE0)
+      ).replace(/．/g, '.').replace(/／/g, '/');
+
       const patterns = [
-        /(\d{4})[-\/\.](\d{1,2})[-\/\.](\d{1,2})/,
-        /(\d{4})年(\d{1,2})月(\d{1,2})日/
+        /(\d{4})[-\/\.\s](\d{1,2})[-\/\.\s](\d{1,2})/,
+        /(\d{4})年(\d{1,2})月(\d{1,2})日/,
+        /(\d{2})[-\/\.\s](\d{1,2})[-\/\.\s](\d{1,2})/  // 2桁年も対応
       ];
 
       for (const pattern of patterns) {
-        const match = text.match(pattern);
+        const match = normalized.match(pattern);
         if (match) {
-          const year = match[1];
+          let year = match[1];
+          // 2桁年の場合は4桁に変換
+          if (year.length === 2) {
+            year = parseInt(year) > 50 ? '19' + year : '20' + year;
+          }
           const month = String(match[2]).padStart(2, '0');
           const day = String(match[3]).padStart(2, '0');
           return `${year}-${month}-${day}`;
