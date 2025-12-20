@@ -501,7 +501,7 @@
               </p>
               <p class="item-meta">💼 ${escapeHtml(metaText)}</p>
             </div>
-            <button class="delete-button" onclick="deleteItem('${item.id}')">削除</button>
+            <button type="button" class="delete-button" onclick="deleteItem('${item.id}', event)">削除</button>
           </li>
         `;
       }).join('');
@@ -540,12 +540,19 @@
     }
 
     // 備蓄品削除
-    function deleteItem(id) {
-      if (!confirm('この備蓄品を削除しますか？')) return;
+    function deleteItem(id, event) {
+      if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      console.log('deleteItem called with id:', id);
+      // 一時的にconfirmを無効化してテスト
+      // if (!confirm('この備蓄品を削除しますか？')) return;
 
       const items = getItems().filter(item => item.id !== id);
       saveItems(items);
       renderItems();
+      console.log('Item deleted successfully');
     }
 
     // モーダル操作
