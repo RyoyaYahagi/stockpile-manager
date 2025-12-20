@@ -342,7 +342,11 @@
       <form id="itemForm" onsubmit="saveItem(event)">
         <div class="form-group">
           <label for="name">品名</label>
-          <input type="text" id="name" required placeholder="例: 水 2L × 6本">
+          <input type="text" id="name" required placeholder="例: 水 2L">
+        </div>
+        <div class="form-group">
+          <label for="quantity">数量</label>
+          <input type="number" id="quantity" min="1" max="99" value="1" required placeholder="例: 6">
         </div>
         <div class="form-group ocr-section">
           <label>📷 写真から日付を読み取る（任意）</label>
@@ -359,9 +363,23 @@
         </div>
         <div class="form-group">
           <label for="bagId">袋（任意）</label>
-          <select id="bagId">
-            <option value="">未指定</option>
-          </select>
+          <div style="display: flex; gap: 8px;">
+            <select id="bagId" style="flex: 1;">
+              <option value="">未指定</option>
+            </select>
+            <button type="button" onclick="showNewBagInput()"
+              style="padding: 8px 12px; background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">+新規</button>
+          </div>
+          <div id="newBagInputWrapper" style="display: none; margin-top: 8px;">
+            <div style="display: flex; gap: 8px;">
+              <input type="text" id="newBagNameModal" placeholder="新しい袋の名前"
+                style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+              <button type="button" onclick="addBagFromModal()"
+                style="padding: 8px 12px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer;">追加</button>
+              <button type="button" onclick="hideNewBagInput()"
+                style="padding: 8px 12px; background: #95a5a6; color: white; border: none; border-radius: 4px; cursor: pointer;">×</button>
+            </div>
+          </div>
         </div>
         <div class="form-group">
           <label for="locationNote">場所メモ（任意）</label>
@@ -372,6 +390,18 @@
           <button type="submit" class="save-button">保存</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- 削除確認モーダル -->
+  <div id="confirmModal" class="modal-overlay">
+    <div class="modal" style="max-width: 300px; text-align: center;">
+      <h2 style="font-size: 18px; margin-bottom: 16px;">削除の確認</h2>
+      <p id="confirmMessage" style="margin-bottom: 20px; color: #666;">この備蓄品を削除しますか？</p>
+      <div class="modal-buttons">
+        <button type="button" class="cancel-button" onclick="closeConfirmModal()">キャンセル</button>
+        <button type="button" class="delete-button" id="confirmDeleteBtn">削除</button>
+      </div>
     </div>
   </div>
 
@@ -437,6 +467,36 @@
       renderBags();
     }
 
+    // モーダル内から袋を追加
+    function showNewBagInput() {
+      document.getElementById('newBagInputWrapper').style.display = 'block';
+      document.getElementById('newBagNameModal').focus();
+    }
+
+    function hideNewBagInput() {
+      document.getElementById('newBagInputWrapper').style.display = 'none';
+      document.getElementById('newBagNameModal').value = '';
+    }
+
+    function addBagFromModal() {
+      const nameInput = document.getElementById('newBagNameModal');
+      const name = nameInput.value.trim();
+      if (!name) return;
+
+      const bags = getBags();
+      const newBag = {
+        id: generateId(),
+        name: name
+      };
+      bags.push(newBag);
+      saveBags(bags);
+      renderBags();
+
+      // 新しく追加した袋を自動選択
+      document.getElementById('bagId').value = newBag.id;
+      hideNewBagInput();
+    }
+
     function renderBags() {
       const bags = getBags();
       const listEl = document.getElementById('bagList');
@@ -495,7 +555,7 @@
         return `
           <li class="item">
             <div class="item-info">
-              <h3>${escapeHtml(item.name)}</h3>
+              <h3>${escapeHtml(item.name)}${item.quantity > 1 ? ` × ${item.quantity}` : ''}</h3>
               <p class="${statusClass}">
                 期限: ${formatDate(item.expiry_date)} ${statusText}
               </p>
@@ -512,6 +572,7 @@
       event.preventDefault();
 
       const name = document.getElementById('name').value.trim();
+      const quantity = parseInt(document.getElementById('quantity').value) || 1;
       const expiryDate = document.getElementById('expiryDate').value;
 
       if (!name || !expiryDate) return;
@@ -520,6 +581,7 @@
       items.push({
         id: generateId(),
         name: name,
+        quantity: quantity,
         expiry_date: expiryDate,
         ocr_text: lastOcrText || null,
         line_user_id: getLineUserId(),
@@ -539,21 +601,42 @@
       lastOcrText = null;
     }
 
-    // 備蓄品削除
+    // 備蓄品削除 - 確認モーダルを表示
+    let pendingDeleteId = null;
+
     function deleteItem(id, event) {
       if (event) {
         event.preventDefault();
         event.stopPropagation();
       }
       console.log('deleteItem called with id:', id);
-      // 一時的にconfirmを無効化してテスト
-      // if (!confirm('この備蓄品を削除しますか？')) return;
+      pendingDeleteId = id;
+      showConfirmModal();
+    }
 
-      const items = getItems().filter(item => item.id !== id);
+    function showConfirmModal() {
+      document.getElementById('confirmModal').classList.add('active');
+    }
+
+    function closeConfirmModal() {
+      document.getElementById('confirmModal').classList.remove('active');
+      pendingDeleteId = null;
+    }
+
+    function actuallyDeleteItem() {
+      if (!pendingDeleteId) return;
+
+      const items = getItems().filter(item => item.id !== pendingDeleteId);
       saveItems(items);
       renderItems();
       console.log('Item deleted successfully');
+      closeConfirmModal();
     }
+
+    // 確認モーダルの削除ボタンにイベントリスナーを設定
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('confirmDeleteBtn').addEventListener('click', actuallyDeleteItem);
+    });
 
     // モーダル操作
     function openModal() {
