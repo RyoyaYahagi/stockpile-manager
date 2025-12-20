@@ -100,38 +100,6 @@
       background: #c0392b;
     }
 
-    .item-actions {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
-
-    .log-button {
-      border: none;
-      padding: 6px 10px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 12px;
-    }
-
-    .log-button.consume {
-      background: #f39c12;
-      color: white;
-    }
-
-    .log-button.consume:hover {
-      background: #d68910;
-    }
-
-    .log-button.refill {
-      background: #27ae60;
-      color: white;
-    }
-
-    .log-button.refill:hover {
-      background: #1e8449;
-    }
-
     .empty-message {
       text-align: center;
       color: #999;
@@ -407,7 +375,6 @@
   <script>
     const STORAGE_KEY = 'stockpile_items';
     const BAGS_STORAGE_KEY = 'stockpile_bags';
-    const LOGS_STORAGE_KEY = 'stockpile_logs';
     const NOTIFICATION_THRESHOLDS = [
       { days: 30, flag: 'notified_30', label: '30日前' },
       { days: 7, flag: 'notified_7', label: '7日前' },
@@ -477,30 +444,8 @@
         `<span class="bag-tag">${escapeHtml(bag.name)}</span>`
       ).join('');
 
-      // プルダウン更新
       selectEl.innerHTML = '<option value="">未指定</option>' +
         bags.map(bag => `<option value="${bag.id}">${escapeHtml(bag.name)}</option>`).join('');
-    }
-
-    // ログ管理
-    function getLogs() {
-      const data = localStorage.getItem(LOGS_STORAGE_KEY);
-      return data ? JSON.parse(data) : [];
-    }
-
-    function saveLogs(logs) {
-      localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify(logs));
-    }
-
-    function addLog(itemId, type) {
-      const logs = getLogs();
-      logs.push({
-        id: generateId(),
-        item_id: itemId,
-        type: type,
-        created_at: new Date().toISOString()
-      });
-      saveLogs(logs);
     }
 
     // UUID生成
@@ -553,11 +498,7 @@
               </p>
               <p class="item-meta">💼 ${escapeHtml(metaText)}</p>
             </div>
-            <div class="item-actions">
-              <button class="log-button consume" onclick="addLog('${item.id}', 'consume')">消費</button>
-              <button class="log-button refill" onclick="addLog('${item.id}', 'refill')">補充</button>
-              <button class="delete-button" onclick="deleteItem('${item.id}')">削除</button>
-            </div>
+            <button class="delete-button" onclick="deleteItem('${item.id}')">削除</button>
           </li>
         `;
       }).join('');
