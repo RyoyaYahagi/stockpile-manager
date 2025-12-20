@@ -564,7 +564,7 @@
 
       const statusEl = document.getElementById('ocrStatus');
       statusEl.className = 'ocr-status';
-      statusEl.textContent = '日付を読み取り中...';
+      statusEl.textContent = '画像を処理中...';
 
       try {
         let recognizedText = '';
@@ -572,11 +572,11 @@
 
         // まずGoogle Cloud Vision APIを試行
         try {
-          const base64 = await fileToBase64(file);
+          const resizedBase64 = await resizeImageForOcr(file, 1200);
           const response = await fetch('/api/ocr', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ image: base64 })
+            body: JSON.stringify({ image: resizedBase64 })
           });
           const data = await response.json();
 
@@ -584,15 +584,17 @@
             recognizedText = data.text.trim();
             console.log('Cloud Vision OCR:', recognizedText.substring(0, 100));
             dateStr = extractDateFromText(recognizedText);
-          } else if (data.fallback) {
-            // APIが未設定の場合はTesseract.jsにフォールバック
-            console.log('Falling back to Tesseract.js');
+          } else if (data.fallback || data.error) {
+            console.log('Falling back to Tesseract.js:', data.error);
             throw new Error('Fallback to Tesseract');
           }
         } catch (apiErr) {
           // Cloud Vision APIが失敗した場合はTesseract.jsを使用
           statusEl.textContent = 'ローカルOCRで試行中...';
-          const result = await Tesseract.recognize(file, 'eng');
+
+          // 画像をリサイズ・グレースケール化してOCR精度向上
+          const processedBlob = await resizeAndGrayscale(file, 800);
+          const result = await Tesseract.recognize(processedBlob, 'eng');
           recognizedText = result.data.text.trim();
           console.log('Tesseract OCR:', recognizedText);
           dateStr = extractDateFromText(recognizedText);
@@ -631,6 +633,76 @@
         };
         reader.onerror = reject;
         reader.readAsDataURL(file);
+      });
+    }
+
+    // 画像をリサイズしてBase64で返す（Cloud Vision API用）
+    function resizeImageForOcr(file, maxSize) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+
+          let { width, height } = img;
+          if (width > maxSize || height > maxSize) {
+            if (width > height) {
+              height = (height / width) * maxSize;
+              width = maxSize;
+            } else {
+              width = (width / height) * maxSize;
+              height = maxSize;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          ctx.drawImage(img, 0, 0, width, height);
+
+          const base64 = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+          resolve(base64);
+        };
+        img.onerror = reject;
+        img.src = URL.createObjectURL(file);
+      });
+    }
+
+    // 画像をリサイズ・グレースケール化してBlobで返す（Tesseract.js用）
+    function resizeAndGrayscale(file, maxSize) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+
+          let { width, height } = img;
+          if (width > maxSize || height > maxSize) {
+            if (width > height) {
+              height = (height / width) * maxSize;
+              width = maxSize;
+            } else {
+              width = (width / height) * maxSize;
+              height = maxSize;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // グレースケール化
+          const imageData = ctx.getImageData(0, 0, width, height);
+          const data = imageData.data;
+          for (let i = 0; i < data.length; i += 4) {
+            const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+            data[i] = data[i + 1] = data[i + 2] = gray;
+          }
+          ctx.putImageData(imageData, 0, 0);
+
+          canvas.toBlob((blob) => resolve(blob), 'image/png');
+        };
+        img.onerror = reject;
+        img.src = URL.createObjectURL(file);
       });
     }
 
