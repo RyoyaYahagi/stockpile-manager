@@ -76,6 +76,52 @@ app.post('/api/line/set-user-id', (req, res) => {
   res.json({ success: true, userId });
 });
 
+// Google Cloud Vision API OCRエンドポイント
+app.post('/api/ocr', async (req, res) => {
+  const { image } = req.body; // Base64エンコードされた画像
+
+  if (!image) {
+    return res.status(400).json({ error: 'Missing image data' });
+  }
+
+  if (!process.env.GOOGLE_CLOUD_API_KEY) {
+    return res.status(500).json({ 
+      error: 'API key not configured',
+      fallback: true // クライアント側でTesseract.jsにフォールバック
+    });
+  }
+
+  try {
+    const response = await fetch(
+      `https://vision.googleapis.com/v1/images:annotate?key=${process.env.GOOGLE_CLOUD_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          requests: [{
+            image: { content: image },
+            features: [{ type: 'TEXT_DETECTION' }]
+          }]
+        })
+      }
+    );
+
+    const data = await response.json();
+
+    if (data.error) {
+      console.error('Vision API error:', data.error);
+      return res.status(500).json({ error: data.error.message, fallback: true });
+    }
+
+    const text = data.responses?.[0]?.fullTextAnnotation?.text || '';
+    console.log('Vision API recognized:', text.substring(0, 100));
+    res.json({ success: true, text });
+  } catch (err) {
+    console.error('OCR error:', err);
+    res.status(500).json({ error: err.message, fallback: true });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
   console.log('');

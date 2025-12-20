@@ -567,20 +567,34 @@
       statusEl.textContent = '日付を読み取り中...';
 
       try {
-        // まず元画像で試行
-        let result = await Tesseract.recognize(file, 'eng');
-        let recognizedText = result.data.text.trim();
-        console.log('OCR (original):', recognizedText);
+        let recognizedText = '';
+        let dateStr = null;
 
-        let dateStr = extractDateFromText(recognizedText);
+        // まずGoogle Cloud Vision APIを試行
+        try {
+          const base64 = await fileToBase64(file);
+          const response = await fetch('/api/ocr', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image: base64 })
+          });
+          const data = await response.json();
 
-        // 元画像で失敗したら前処理して再試行
-        if (!dateStr) {
-          statusEl.textContent = '画像を調整して再試行中...';
-          const processedBlob = await preprocessImage(file);
-          result = await Tesseract.recognize(processedBlob, 'eng');
+          if (data.success && data.text) {
+            recognizedText = data.text.trim();
+            console.log('Cloud Vision OCR:', recognizedText.substring(0, 100));
+            dateStr = extractDateFromText(recognizedText);
+          } else if (data.fallback) {
+            // APIが未設定の場合はTesseract.jsにフォールバック
+            console.log('Falling back to Tesseract.js');
+            throw new Error('Fallback to Tesseract');
+          }
+        } catch (apiErr) {
+          // Cloud Vision APIが失敗した場合はTesseract.jsを使用
+          statusEl.textContent = 'ローカルOCRで試行中...';
+          const result = await Tesseract.recognize(file, 'eng');
           recognizedText = result.data.text.trim();
-          console.log('OCR (processed):', recognizedText);
+          console.log('Tesseract OCR:', recognizedText);
           dateStr = extractDateFromText(recognizedText);
         }
 
@@ -592,7 +606,6 @@
           statusEl.textContent = `✓ 日付を検出: ${dateStr}（確認してください）`;
         } else {
           statusEl.className = 'ocr-status error';
-          // 認識したテキストの一部を表示（デバッグ用）
           const preview = recognizedText.length > 50
             ? recognizedText.substring(0, 50) + '...'
             : recognizedText;
@@ -604,8 +617,21 @@
         statusEl.textContent = 'エラーが発生しました（JPG/PNG形式で再試行してください）';
       }
 
-
       event.target.value = '';
+    }
+
+    // ファイルをBase64に変換
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          // data:image/jpeg;base64,... の形式から base64 部分のみ抽出
+          const base64 = reader.result.split(',')[1];
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
     }
 
     // 画像前処理（グレースケール化 + コントラスト強調 + シャープ化）
