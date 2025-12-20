@@ -346,6 +346,9 @@
         </div>
         <div class="form-group ocr-section">
           <label>📷 写真から日付を読み取る（任意）</label>
+          <p style="font-size: 11px; color: #e74c3c; margin-bottom: 8px;">
+            ⚠️ 画像は外部サーバーで処理されます。機密情報を含む画像はアップロードしないでください。
+          </p>
           <input type="file" id="ocrImage" accept="image/*" style="display:none" onchange="handleOcrUpload(event)">
           <label for="ocrImage" class="ocr-upload-btn">写真を選択</label>
           <p id="ocrStatus" class="ocr-status"></p>
