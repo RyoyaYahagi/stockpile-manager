@@ -575,7 +575,7 @@
 
         // まずGoogle Cloud Vision APIを試行
         try {
-          const resizedBase64 = await resizeImageForOcr(file, 1200);
+          const resizedBase64 = await resizeImageForOcr(file, 2000);
           const response = await fetch('/api/ocr', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

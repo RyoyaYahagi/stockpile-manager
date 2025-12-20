@@ -97,6 +97,8 @@ app.post('/api/ocr', async (req, res) => {
     formData.append('base64Image', `data:image/jpeg;base64,${image}`);
     formData.append('language', 'jpn'); // 日本語
     formData.append('isOverlayRequired', 'false');
+    formData.append('OCREngine', '2'); // Engine 2は数字認識が優秀
+    formData.append('scale', 'true'); // 画像を拡大して認識精度向上
 
     const response = await fetch('https://api.ocr.space/parse/image', {
       method: 'POST',
