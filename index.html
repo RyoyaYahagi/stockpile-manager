@@ -564,21 +564,33 @@
 
       const statusEl = document.getElementById('ocrStatus');
       statusEl.className = 'ocr-status';
-      statusEl.textContent = '読み取り中...';
+      statusEl.textContent = '画像を処理中...';
 
       try {
-        const result = await Tesseract.recognize(file, 'jpn+eng');
-        console.log('OCR recognized text:', result.data.text);
-        const dateStr = extractDateFromText(result.data.text);
-        lastOcrText = result.data.text;
+        // 画像を前処理（グレースケール化 + コントラスト強調）
+        const processedBlob = await preprocessImage(file);
+
+        statusEl.textContent = '日付を読み取り中...';
+
+        // 数字認識には英語モードが適している
+        const result = await Tesseract.recognize(processedBlob, 'eng');
+        const recognizedText = result.data.text.trim();
+        console.log('OCR recognized text:', recognizedText);
+
+        const dateStr = extractDateFromText(recognizedText);
+        lastOcrText = recognizedText;
 
         if (dateStr) {
           document.getElementById('expiryDate').value = dateStr;
           statusEl.className = 'ocr-status success';
-          statusEl.textContent = '日付を検出しました（確認してください）';
+          statusEl.textContent = `✓ 日付を検出: ${dateStr}（確認してください）`;
         } else {
           statusEl.className = 'ocr-status error';
-          statusEl.textContent = '日付が見つかりませんでした';
+          // 認識したテキストの一部を表示（デバッグ用）
+          const preview = recognizedText.length > 50
+            ? recognizedText.substring(0, 50) + '...'
+            : recognizedText;
+          statusEl.textContent = `日付が見つかりませんでした。認識: "${preview}"`;
         }
       } catch (err) {
         console.error('OCR error:', err);
@@ -589,31 +601,125 @@
       event.target.value = '';
     }
 
+    // 画像前処理（グレースケール化 + コントラスト強調 + シャープ化）
+    async function preprocessImage(file) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+
+          canvas.width = img.width;
+          canvas.height = img.height;
+
+          // 画像を描画
+          ctx.drawImage(img, 0, 0);
+
+          // ピクセルデータを取得
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const data = imageData.data;
+
+          // グレースケール化 + コントラスト強調（二値化なし）
+          for (let i = 0; i < data.length; i += 4) {
+            // グレースケール変換
+            const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+
+            // コントラスト強調のみ（二値化は行わない）
+            const contrast = 2.0;
+            const factor = (259 * (contrast * 128 + 255)) / (255 * (259 - contrast * 128));
+            let value = factor * (gray - 128) + 128;
+            value = Math.max(0, Math.min(255, value));
+
+            data[i] = data[i + 1] = data[i + 2] = value;
+          }
+
+          ctx.putImageData(imageData, 0, 0);
+
+          // Blobに変換
+          canvas.toBlob((blob) => {
+            resolve(blob);
+          }, 'image/png');
+        };
+        img.onerror = reject;
+        img.src = URL.createObjectURL(file);
+      });
+    }
+
 
     // 日付抽出
     function extractDateFromText(text) {
-      // 全角数字を半角に変換
-      const normalized = text.replace(/[０-９]/g, s =>
-        String.fromCharCode(s.charCodeAt(0) - 0xFEE0)
-      ).replace(/．/g, '.').replace(/／/g, '/');
+      // 全角数字・記号を半角に変換
+      let normalized = text
+        .replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0))
+        .replace(/[．。]/g, '.')
+        .replace(/[／／]/g, '/')
+        .replace(/[－ー―−]/g, '-')
+        .replace(/\s+/g, ' ');
 
+      // 「賞味期限」「消費期限」の近くを優先検索
+      const keywordMatch = normalized.match(/(賞味期限|消費期限|期限)[：:\s]*([^\n]{5,30})/);
+      if (keywordMatch) {
+        const nearKeyword = extractDateFromTextCore(keywordMatch[2]);
+        if (nearKeyword) return nearKeyword;
+      }
+
+      return extractDateFromTextCore(normalized);
+    }
+
+    // 日付抽出コア処理
+    function extractDateFromTextCore(text) {
       const patterns = [
-        /(\d{4})[-\/\.\s](\d{1,2})[-\/\.\s](\d{1,2})/,
-        /(\d{4})年(\d{1,2})月(\d{1,2})日/,
-        /(\d{2})[-\/\.\s](\d{1,2})[-\/\.\s](\d{1,2})/  // 2桁年も対応
+        // 標準形式: 2024-12-25, 2024/12/25, 2024.12.25
+        { regex: /(\d{4})[-\/\.\s](\d{1,2})[-\/\.\s](\d{1,2})/, type: 'ymd' },
+        // 日本語形式: 2024年12月25日
+        { regex: /(\d{4})年(\d{1,2})月(\d{1,2})日/, type: 'ymd' },
+        // 2桁年: 24-12-25, 24/12/25, 24.12.25
+        { regex: /(\d{2})[-\/\.\s](\d{1,2})[-\/\.\s](\d{1,2})/, type: 'ymd_short' },
+        // 連続8桁: 20241225
+        { regex: /(\d{4})(\d{2})(\d{2})/, type: 'ymd' },
+        // 連続6桁: 241225
+        { regex: /(?<!\d)(\d{2})(\d{2})(\d{2})(?!\d)/, type: 'ymd_short' },
+        // 年月+管理記号: 2024.12 / 2（スラッシュ+スペース+数字は管理記号として無視）
+        { regex: /(\d{4})[-\/\.](\d{1,2})\s*\/\s*\d/, type: 'ym' },
+        // 年月のみ: 2024-12, 2024/12, 2024.12（後ろに数字がないか、スペースがあるか）
+        { regex: /(\d{4})[-\/\.](\d{1,2})(?:\s|$|[^\d\/])/, type: 'ym' },
+        // 年月のみ日本語: 2024年12月
+        { regex: /(\d{4})年(\d{1,2})月(?!\d)/, type: 'ym' },
+        // 2桁年月のみ: 24.12
+        { regex: /(?<!\d)(\d{2})[-\/\.](\d{1,2})(?:\s|$|[^\d\/])/, type: 'ym_short' },
       ];
 
-      for (const pattern of patterns) {
-        const match = normalized.match(pattern);
+      for (const { regex, type } of patterns) {
+        const match = text.match(regex);
         if (match) {
-          let year = match[1];
-          // 2桁年の場合は4桁に変換
-          if (year.length === 2) {
-            year = parseInt(year) > 50 ? '19' + year : '20' + year;
+          let year, month, day;
+
+          if (type === 'ymd') {
+            year = match[1];
+            month = match[2];
+            day = match[3];
+          } else if (type === 'ymd_short') {
+            year = parseInt(match[1]) > 50 ? '19' + match[1] : '20' + match[1];
+            month = match[2];
+            day = match[3];
+          } else if (type === 'ym') {
+            year = match[1];
+            month = match[2];
+            // 月末日を計算
+            day = new Date(parseInt(year), parseInt(month), 0).getDate();
+          } else if (type === 'ym_short') {
+            year = parseInt(match[1]) > 50 ? '19' + match[1] : '20' + match[1];
+            month = match[2];
+            // 月末日を計算
+            day = new Date(parseInt(year), parseInt(month), 0).getDate();
           }
-          const month = String(match[2]).padStart(2, '0');
-          const day = String(match[3]).padStart(2, '0');
-          return `${year}-${month}-${day}`;
+
+          // バリデーション
+          const m = parseInt(month);
+          const d = parseInt(day);
+          if (m >= 1 && m <= 12 && d >= 1 && d <= 31) {
+            return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+          }
         }
       }
       return null;
