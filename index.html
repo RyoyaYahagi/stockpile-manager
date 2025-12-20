@@ -564,20 +564,26 @@
 
       const statusEl = document.getElementById('ocrStatus');
       statusEl.className = 'ocr-status';
-      statusEl.textContent = '画像を処理中...';
+      statusEl.textContent = '日付を読み取り中...';
 
       try {
-        // 画像を前処理（グレースケール化 + コントラスト強調）
-        const processedBlob = await preprocessImage(file);
+        // まず元画像で試行
+        let result = await Tesseract.recognize(file, 'eng');
+        let recognizedText = result.data.text.trim();
+        console.log('OCR (original):', recognizedText);
 
-        statusEl.textContent = '日付を読み取り中...';
+        let dateStr = extractDateFromText(recognizedText);
 
-        // 数字認識には英語モードが適している
-        const result = await Tesseract.recognize(processedBlob, 'eng');
-        const recognizedText = result.data.text.trim();
-        console.log('OCR recognized text:', recognizedText);
+        // 元画像で失敗したら前処理して再試行
+        if (!dateStr) {
+          statusEl.textContent = '画像を調整して再試行中...';
+          const processedBlob = await preprocessImage(file);
+          result = await Tesseract.recognize(processedBlob, 'eng');
+          recognizedText = result.data.text.trim();
+          console.log('OCR (processed):', recognizedText);
+          dateStr = extractDateFromText(recognizedText);
+        }
 
-        const dateStr = extractDateFromText(recognizedText);
         lastOcrText = recognizedText;
 
         if (dateStr) {
@@ -597,6 +603,7 @@
         statusEl.className = 'ocr-status error';
         statusEl.textContent = 'エラーが発生しました（JPG/PNG形式で再試行してください）';
       }
+
 
       event.target.value = '';
     }
