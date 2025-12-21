@@ -1,53 +1,45 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
+import { useState } from "react";
+import { useUser } from "@stackframe/stack";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function FamilySetup() {
-    const [mode, setMode] = useState<'create' | 'join'>('create');
-    const [familyName, setFamilyName] = useState('');
-    const [inviteCode, setInviteCode] = useState('');
-    const [error, setError] = useState('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const user = useUser();
     const router = useRouter();
-    const supabase = createClient();
+    const [mode, setMode] = useState<"create" | "join">("create");
+    const [familyName, setFamilyName] = useState("");
+    const [inviteCode, setInviteCode] = useState("");
+    const [error, setError] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const generateInviteCode = () => {
-        return Math.random().toString(36).substring(2, 8).toUpperCase();
-    };
+    useEffect(() => {
+        if (!user) {
+            router.push("/login");
+        }
+    }, [user, router]);
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!familyName.trim()) return;
 
         setIsSubmitting(true);
-        setError('');
+        setError("");
 
-        // 家族を作成
-        const code = generateInviteCode();
-        const { data: family, error: familyError } = await supabase
-            .from('families')
-            .insert({ name: familyName.trim(), invite_code: code })
-            .select()
-            .single();
+        const res = await fetch("/api/family", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "create", name: familyName.trim() }),
+        });
 
-        if (familyError) {
-            setError('家族の作成に失敗しました');
+        if (!res.ok) {
+            setError("家族の作成に失敗しました");
             setIsSubmitting(false);
             return;
         }
 
-        // ユーザーを家族に紐付け
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-            await supabase
-                .from('users')
-                .update({ family_id: family.id })
-                .eq('id', user.id);
-        }
-
-        router.push('/dashboard');
+        router.push("/dashboard");
     };
 
     const handleJoin = async (e: React.FormEvent) => {
@@ -55,32 +47,26 @@ export default function FamilySetup() {
         if (!inviteCode.trim()) return;
 
         setIsSubmitting(true);
-        setError('');
+        setError("");
 
-        // 招待コードで家族を検索
-        const { data: family, error: familyError } = await supabase
-            .from('families')
-            .select('id')
-            .eq('invite_code', inviteCode.trim().toUpperCase())
-            .single();
+        const res = await fetch("/api/family", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "join", inviteCode: inviteCode.trim() }),
+        });
 
-        if (familyError || !family) {
-            setError('招待コードが見つかりません');
+        if (!res.ok) {
+            setError("招待コードが見つかりません");
             setIsSubmitting(false);
             return;
         }
 
-        // ユーザーを家族に紐付け
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-            await supabase
-                .from('users')
-                .update({ family_id: family.id })
-                .eq('id', user.id);
-        }
-
-        router.push('/dashboard');
+        router.push("/dashboard");
     };
+
+    if (!user) {
+        return null;
+    }
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -89,19 +75,19 @@ export default function FamilySetup() {
 
                 <div className="flex gap-2 mb-6">
                     <button
-                        onClick={() => setMode('create')}
-                        className={`flex-1 py-2 rounded-lg font-medium ${mode === 'create'
-                                ? 'bg-blue-500 text-white'
-                                : 'bg-gray-100 text-gray-600'
+                        onClick={() => setMode("create")}
+                        className={`flex-1 py-2 rounded-lg font-medium ${mode === "create"
+                                ? "bg-blue-500 text-white"
+                                : "bg-gray-100 text-gray-600"
                             }`}
                     >
                         新規作成
                     </button>
                     <button
-                        onClick={() => setMode('join')}
-                        className={`flex-1 py-2 rounded-lg font-medium ${mode === 'join'
-                                ? 'bg-blue-500 text-white'
-                                : 'bg-gray-100 text-gray-600'
+                        onClick={() => setMode("join")}
+                        className={`flex-1 py-2 rounded-lg font-medium ${mode === "join"
+                                ? "bg-blue-500 text-white"
+                                : "bg-gray-100 text-gray-600"
                             }`}
                     >
                         参加する
@@ -112,7 +98,7 @@ export default function FamilySetup() {
                     <p className="text-red-500 text-sm mb-4 text-center">{error}</p>
                 )}
 
-                {mode === 'create' ? (
+                {mode === "create" ? (
                     <form onSubmit={handleCreate} className="space-y-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -132,7 +118,7 @@ export default function FamilySetup() {
                             disabled={isSubmitting}
                             className="w-full py-3 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 disabled:opacity-50"
                         >
-                            {isSubmitting ? '作成中...' : '家族を作成'}
+                            {isSubmitting ? "作成中..." : "家族を作成"}
                         </button>
                         <p className="text-sm text-gray-500 text-center">
                             作成後、招待コードを家族に共有できます
@@ -159,7 +145,7 @@ export default function FamilySetup() {
                             disabled={isSubmitting}
                             className="w-full py-3 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 disabled:opacity-50"
                         >
-                            {isSubmitting ? '参加中...' : '家族に参加'}
+                            {isSubmitting ? "参加中..." : "家族に参加"}
                         </button>
                         <p className="text-sm text-gray-500 text-center">
                             家族メンバーから招待コードをもらってください

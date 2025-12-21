@@ -1,11 +1,10 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
-import type { Item, Bag } from '@/lib/types';
-import AddItemModal from './AddItemModal';
-import ConfirmModal from './ConfirmModal';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import type { Item, Bag } from "@/lib/db/schema";
+import AddItemModal from "./AddItemModal";
+import ConfirmModal from "./ConfirmModal";
 
 interface ItemListProps {
     items: (Item & { bag: Bag | null })[];
@@ -13,12 +12,15 @@ interface ItemListProps {
     familyId: string;
 }
 
-export default function ItemList({ items: initialItems, bags, familyId }: ItemListProps) {
+export default function ItemList({
+    items: initialItems,
+    bags,
+    familyId,
+}: ItemListProps) {
     const [items, setItems] = useState(initialItems);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
     const router = useRouter();
-    const supabase = createClient();
 
     const getDaysUntilExpiry = (expiryDate: string) => {
         const today = new Date();
@@ -36,8 +38,8 @@ export default function ItemList({ items: initialItems, bags, familyId }: ItemLi
     const handleDelete = async () => {
         if (!deleteTarget) return;
 
-        await supabase.from('items').delete().eq('id', deleteTarget);
-        setItems(items.filter(item => item.id !== deleteTarget));
+        await fetch(`/api/items?id=${deleteTarget}`, { method: "DELETE" });
+        setItems(items.filter((item) => item.id !== deleteTarget));
         setDeleteTarget(null);
     };
 
@@ -69,31 +71,36 @@ export default function ItemList({ items: initialItems, bags, familyId }: ItemLi
             ) : (
                 <ul className="space-y-3">
                     {items.map((item) => {
-                        const daysLeft = getDaysUntilExpiry(item.expiry_date);
-                        let statusClass = 'text-gray-600';
-                        let statusText = '';
+                        const daysLeft = getDaysUntilExpiry(item.expiryDate);
+                        let statusClass = "text-gray-600";
+                        let statusText = "";
 
                         if (daysLeft < 0) {
-                            statusClass = 'text-red-600 font-semibold';
+                            statusClass = "text-red-600 font-semibold";
                             statusText = `（${Math.abs(daysLeft)}日経過）`;
                         } else if (daysLeft <= 7) {
-                            statusClass = 'text-orange-600 font-semibold';
+                            statusClass = "text-orange-600 font-semibold";
                             statusText = `（あと${daysLeft}日）`;
                         }
 
                         return (
-                            <li key={item.id} className="bg-white rounded-lg shadow p-4 flex justify-between items-center">
+                            <li
+                                key={item.id}
+                                className="bg-white rounded-lg shadow p-4 flex justify-between items-center"
+                            >
                                 <div>
                                     <h3 className="font-medium text-gray-800">
                                         {item.name}
-                                        {item.quantity > 1 && <span className="text-gray-500"> × {item.quantity}</span>}
+                                        {item.quantity && item.quantity > 1 && (
+                                            <span className="text-gray-500"> × {item.quantity}</span>
+                                        )}
                                     </h3>
                                     <p className={statusClass}>
-                                        期限: {formatDate(item.expiry_date)} {statusText}
+                                        期限: {formatDate(item.expiryDate)} {statusText}
                                     </p>
                                     <p className="text-sm text-gray-500">
-                                        💼 {item.bag?.name || '未指定'}
-                                        {item.location_note && ` / ${item.location_note}`}
+                                        💼 {item.bag?.name || "未指定"}
+                                        {item.locationNote && ` / ${item.locationNote}`}
                                     </p>
                                 </div>
                                 <button

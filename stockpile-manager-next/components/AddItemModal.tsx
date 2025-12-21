@@ -1,8 +1,7 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
-import type { Bag } from '@/lib/types';
+import { useState } from "react";
+import type { Bag } from "@/lib/db/schema";
 
 interface AddItemModalProps {
     bags: Bag[];
@@ -11,34 +10,36 @@ interface AddItemModalProps {
     onSuccess: () => void;
 }
 
-export default function AddItemModal({ bags, familyId, onClose, onSuccess }: AddItemModalProps) {
-    const [name, setName] = useState('');
+export default function AddItemModal({
+    bags,
+    familyId,
+    onClose,
+    onSuccess,
+}: AddItemModalProps) {
+    const [name, setName] = useState("");
     const [quantity, setQuantity] = useState(1);
-    const [expiryDate, setExpiryDate] = useState('');
-    const [bagId, setBagId] = useState('');
-    const [locationNote, setLocationNote] = useState('');
-    const [newBagName, setNewBagName] = useState('');
+    const [expiryDate, setExpiryDate] = useState("");
+    const [bagId, setBagId] = useState("");
+    const [locationNote, setLocationNote] = useState("");
+    const [newBagName, setNewBagName] = useState("");
     const [showNewBagInput, setShowNewBagInput] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [localBags, setLocalBags] = useState(bags);
 
-    const supabase = createClient();
-
     const handleAddBag = async () => {
         if (!newBagName.trim()) return;
 
-        const { data, error } = await supabase
-            .from('bags')
-            .insert({ family_id: familyId, name: newBagName.trim() })
-            .select()
-            .single();
+        const res = await fetch("/api/bags", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: newBagName.trim() }),
+        });
 
-        if (!error && data) {
-            setLocalBags([...localBags, data]);
-            setBagId(data.id);
-            setNewBagName('');
-            setShowNewBagInput(false);
-        }
+        const newBag = await res.json();
+        setLocalBags([...localBags, newBag]);
+        setBagId(newBag.id);
+        setNewBagName("");
+        setShowNewBagInput(false);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -47,20 +48,20 @@ export default function AddItemModal({ bags, familyId, onClose, onSuccess }: Add
 
         setIsSubmitting(true);
 
-        const { error } = await supabase.from('items').insert({
-            family_id: familyId,
-            name: name.trim(),
-            quantity,
-            expiry_date: expiryDate,
-            bag_id: bagId || null,
-            location_note: locationNote.trim() || null,
+        await fetch("/api/items", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                name: name.trim(),
+                quantity,
+                expiryDate,
+                bagId: bagId || null,
+                locationNote: locationNote.trim() || null,
+            }),
         });
 
         setIsSubmitting(false);
-
-        if (!error) {
-            onSuccess();
-        }
+        onSuccess();
     };
 
     return (
@@ -70,7 +71,9 @@ export default function AddItemModal({ bags, familyId, onClose, onSuccess }: Add
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">品名</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            品名
+                        </label>
                         <input
                             type="text"
                             value={name}
@@ -82,7 +85,9 @@ export default function AddItemModal({ bags, familyId, onClose, onSuccess }: Add
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">数量</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            数量
+                        </label>
                         <input
                             type="number"
                             value={quantity}
@@ -94,7 +99,9 @@ export default function AddItemModal({ bags, familyId, onClose, onSuccess }: Add
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">賞味期限</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            賞味期限
+                        </label>
                         <input
                             type="date"
                             value={expiryDate}
@@ -105,7 +112,9 @@ export default function AddItemModal({ bags, familyId, onClose, onSuccess }: Add
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">袋（任意）</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            袋（任意）
+                        </label>
                         <div className="flex gap-2">
                             <select
                                 value={bagId}
@@ -114,7 +123,9 @@ export default function AddItemModal({ bags, familyId, onClose, onSuccess }: Add
                             >
                                 <option value="">未指定</option>
                                 {localBags.map((bag) => (
-                                    <option key={bag.id} value={bag.id}>{bag.name}</option>
+                                    <option key={bag.id} value={bag.id}>
+                                        {bag.name}
+                                    </option>
                                 ))}
                             </select>
                             <button
@@ -146,7 +157,9 @@ export default function AddItemModal({ bags, familyId, onClose, onSuccess }: Add
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">場所メモ（任意）</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            場所メモ（任意）
+                        </label>
                         <input
                             type="text"
                             value={locationNote}
@@ -169,7 +182,7 @@ export default function AddItemModal({ bags, familyId, onClose, onSuccess }: Add
                             disabled={isSubmitting}
                             className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
                         >
-                            {isSubmitting ? '保存中...' : '保存'}
+                            {isSubmitting ? "保存中..." : "保存"}
                         </button>
                     </div>
                 </form>

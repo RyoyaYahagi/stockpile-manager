@@ -1,54 +1,80 @@
-import { createClient } from '@/lib/supabase/server';
-import { redirect } from 'next/navigation';
-import ItemList from '@/components/ItemList';
-import Header from '@/components/Header';
+"use client";
 
-export default async function Dashboard() {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+import { useUser } from "@stackframe/stack";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import ItemList from "@/components/ItemList";
+import Header from "@/components/Header";
+import type { Item, Bag } from "@/lib/db/schema";
 
-    if (!user) {
-        redirect('/login');
+export default function Dashboard() {
+    const user = useUser();
+    const router = useRouter();
+    const [items, setItems] = useState<(Item & { bag: Bag | null })[]>([]);
+    const [bags, setBags] = useState<Bag[]>([]);
+    const [familyId, setFamilyId] = useState<string | null>(null);
+    const [familyName, setFamilyName] = useState("家族");
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        if (!user) {
+            router.push("/login");
+            return;
+        }
+
+        const fetchData = async () => {
+            try {
+                // ユーザーデータを取得
+                const userRes = await fetch("/api/user");
+                const userData = await userRes.json();
+
+                if (!userData.familyId) {
+                    router.push("/family/setup");
+                    return;
+                }
+
+                setFamilyId(userData.familyId);
+                setFamilyName(userData.familyName || "家族");
+
+                // 備蓄品と袋を取得
+                const [itemsRes, bagsRes] = await Promise.all([
+                    fetch("/api/items"),
+                    fetch("/api/bags"),
+                ]);
+
+                const itemsData = await itemsRes.json();
+                const bagsData = await bagsRes.json();
+
+                setItems(itemsData);
+                setBags(bagsData);
+            } catch (error) {
+                console.error("Error fetching data:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchData();
+    }, [user, router]);
+
+    if (!user || isLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+            </div>
+        );
     }
-
-    // ユーザー情報を取得
-    const { data: userData } = await supabase
-        .from('users')
-        .select('*, family:families(*)')
-        .eq('id', user.id)
-        .single();
-
-    // 家族に所属していない場合は家族作成・参加ページへ
-    if (!userData?.family_id) {
-        redirect('/family/setup');
-    }
-
-    // 備蓄品を取得
-    const { data: items } = await supabase
-        .from('items')
-        .select('*, bag:bags(*)')
-        .eq('family_id', userData.family_id)
-        .order('expiry_date', { ascending: true });
-
-    // 袋を取得
-    const { data: bags } = await supabase
-        .from('bags')
-        .select('*')
-        .eq('family_id', userData.family_id)
-        .order('name');
 
     return (
         <div className="min-h-screen bg-gray-50">
             <Header
-                user={userData}
-                familyName={userData.family?.name || '家族'}
+                displayName={user.displayName || user.primaryEmail || "ユーザー"}
+                familyName={familyName}
             />
             <main className="max-w-2xl mx-auto px-4 py-6">
-                <ItemList
-                    items={items || []}
-                    bags={bags || []}
-                    familyId={userData.family_id}
-                />
+                {familyId && (
+                    <ItemList items={items} bags={bags} familyId={familyId} />
+                )}
             </main>
         </div>
     );
