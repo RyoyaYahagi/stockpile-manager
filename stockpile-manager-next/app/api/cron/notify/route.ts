@@ -7,10 +7,7 @@ import { NextResponse } from "next/server";
 const LINE_MESSAGING_API = "https://api.line.me/v2/bot/message/multicast";
 
 export async function GET() {
-    console.log("Starting Cron Job: Notify");
-
     if (!process.env.LINE_CHANNEL_ACCESS_TOKEN) {
-        console.error("LINE_CHANNEL_ACCESS_TOKEN is missing");
         return NextResponse.json({ error: "LINE_CHANNEL_ACCESS_TOKEN not set" }, { status: 500 });
     }
 
@@ -21,8 +18,6 @@ export async function GET() {
         // 期限7日後
         const sevenDaysLater = new Date(today);
         sevenDaysLater.setDate(today.getDate() + 7);
-
-        console.log(`Checking items expiring before or at: ${sevenDaysLater.toISOString()}`);
 
         const targetItems = await db.query.items.findMany({
             where: and(
@@ -39,11 +34,8 @@ export async function GET() {
             }
         });
 
-        console.log(`Found ${targetItems.length} target items`);
-
         if (targetItems.length === 0) {
-            console.log("No items matched the criteria.");
-            return NextResponse.json({ message: "No items to notify", logs: "No items matched" });
+            return NextResponse.json({ message: "No items to notify" });
         }
 
         // 家族ごとにメッセージをまとめる
@@ -51,24 +43,13 @@ export async function GET() {
 
         for (const item of targetItems) {
             const family = item.family;
-            if (!family) {
-                console.log(`Item ${item.id} has no family linked.`);
-                continue;
-            }
-
-            // LINE User IDを持っているユーザーを探す
-            console.log(`Checking users in family ${family.id}:`, family.users);
+            if (!family) continue;
 
             const lineUserIds = family.users
                 .map(u => u.lineUserId)
                 .filter((id): id is string => !!id);
 
-            console.log(`  -> Found LINE IDs: ${lineUserIds}`);
-
-            if (lineUserIds.length === 0) {
-                console.log(`  -> Skipping family ${family.id} (No LINE IDs)`);
-                continue;
-            }
+            if (lineUserIds.length === 0) continue;
 
             if (!familyNotifications.has(family.id)) {
                 familyNotifications.set(family.id, { userIds: lineUserIds, items: [] });
@@ -76,18 +57,11 @@ export async function GET() {
             familyNotifications.get(family.id)!.items.push(item);
         }
 
-        if (familyNotifications.size === 0) {
-            console.log("No valid recipients found (missing LINE IDs).");
-            return NextResponse.json({ message: "Items found but no valid recipients", count: targetItems.length });
-        }
-
         // LINE通知送信
         const results = [];
         for (const [familyId, data] of familyNotifications.entries()) {
             const message = createLineMessage(data.items);
             const uniqueUserIds = [...new Set(data.userIds)];
-
-            console.log(`Sending LINE message to family ${familyId} (Users: ${uniqueUserIds.join(', ')})`);
 
             const res = await fetch(LINE_MESSAGING_API, {
                 method: 'POST',
@@ -107,7 +81,6 @@ export async function GET() {
             });
 
             if (res.ok) {
-                console.log(`  -> Success`);
                 // 通知済みフラグを更新
                 const itemIds = data.items.map(i => i.id);
                 await db.update(items)
@@ -116,9 +89,8 @@ export async function GET() {
 
                 results.push({ familyId, success: true });
             } else {
-                const errorText = await res.text();
-                console.error(`  -> Failed: ${errorText}`);
-                results.push({ familyId, success: false, error: errorText });
+                console.error(`Failed to send LINE message to family ${familyId}`, await res.text());
+                results.push({ familyId, success: false });
             }
         }
 

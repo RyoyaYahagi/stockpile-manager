@@ -40,3 +40,28 @@ export async function GET() {
         lineUserId: dbUser.lineUserId,
     });
 }
+
+export async function PUT(request: Request) {
+    const user = await stackServerApp.getUser();
+
+    if (!user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    try {
+        const body = await request.json();
+        const { lineUserId } = body;
+
+        // lineUserIdが空文字列ならnullにするなど、バリデーション
+        const newLineUserId = lineUserId ? lineUserId.trim() : null;
+
+        await db.update(users)
+            .set({ lineUserId: newLineUserId })
+            .where(eq(users.id, user.id));
+
+        return NextResponse.json({ success: true, lineUserId: newLineUserId });
+    } catch (error) {
+        console.error("Update user error:", error);
+        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    }
+}

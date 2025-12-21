@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
 import ItemList from "@/components/ItemList";
 import Header from "@/components/Header";
+import LineSettingsModal from "@/components/LineSettingsModal";
 import type { Item, Bag } from "@/lib/db/schema";
 
 export default function Dashboard() {
@@ -15,6 +16,9 @@ export default function Dashboard() {
     const [familyId, setFamilyId] = useState<string | null>(null);
     const [familyName, setFamilyName] = useState("家族");
     const [isLoading, setIsLoading] = useState(true);
+    // LINE設定追加
+    const [lineUserId, setLineUserId] = useState<string | null>(null);
+    const [isLineModalOpen, setIsLineModalOpen] = useState(false);
 
     const fetchData = useCallback(async () => {
         try {
@@ -29,6 +33,7 @@ export default function Dashboard() {
 
             setFamilyId(userData.familyId);
             setFamilyName(userData.familyName || "家族");
+            setLineUserId(userData.lineUserId);
 
             // 備蓄品と袋を取得
             const [itemsRes, bagsRes] = await Promise.all([
@@ -82,6 +87,16 @@ export default function Dashboard() {
                 familyName={familyName}
             />
             <main className="max-w-2xl mx-auto px-4 py-6">
+                <div className="flex justify-end mb-4">
+                    <button
+                        onClick={() => setIsLineModalOpen(true)}
+                        className={`text-sm px-3 py-1 rounded border flex items-center gap-1 ${lineUserId ? "bg-green-50 text-green-700 border-green-200" : "bg-gray-50 text-gray-500 border-gray-200"}`}
+                    >
+                        <span>💬</span>
+                        {lineUserId ? "LINE連携設定" : "LINE未連携"}
+                    </button>
+                </div>
+
                 {familyId && (
                     <ItemList
                         items={items}
@@ -89,6 +104,14 @@ export default function Dashboard() {
                         familyId={familyId}
                         onAddItem={handleAddItem}
                         onRemoveItem={handleRemoveItem}
+                    />
+                )}
+
+                {isLineModalOpen && (
+                    <LineSettingsModal
+                        currentLineUserId={lineUserId}
+                        onClose={() => setIsLineModalOpen(false)}
+                        onSave={(id) => setLineUserId(id)}
                     />
                 )}
             </main>
