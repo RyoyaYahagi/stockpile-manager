@@ -59,6 +59,23 @@ export default function AddItemModal({
         setIsSubmitting(true);
 
         try {
+            let finalBagId = bagId;
+
+            // 新規袋の入力があり、まだ追加されていない（bagIdが空）場合は自動作成
+            if (showNewBagInput && newBagName.trim() && !bagId) {
+                const bagRes = await fetch("/api/bags", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ name: newBagName.trim() }),
+                });
+
+                if (bagRes.ok) {
+                    const newBag = await bagRes.json();
+                    setLocalBags(prev => [...prev, newBag]);
+                    finalBagId = newBag.id;
+                }
+            }
+
             const res = await fetch("/api/items", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -66,7 +83,7 @@ export default function AddItemModal({
                     name: name.trim(),
                     quantity,
                     expiryDate,
-                    bagId: bagId || null,
+                    bagId: finalBagId || null,
                     locationNote: locationNote.trim() || null,
                 }),
             });
@@ -76,9 +93,26 @@ export default function AddItemModal({
                 console.log('API Response Item:', newItem);
 
                 // bag情報を付加（楽観的更新用）
-                console.log('Local Bags:', localBags);
-                const bag = localBags.find(b => b.id === newItem.bagId) || null;
-                console.log('Found Bag:', bag);
+                let bag = localBags.find(b => b.id === newItem.bagId) || null;
+
+                // localBagsに見つからない場合（同期ズレなど）、APIから取得を試みる
+                if (!bag && newItem.bagId) {
+                    try {
+                        // localBagsを再検索（念のため）または親のbagsを確認したいが、
+                        // ここでは単発でfetchする方が確実
+                        // ただしGET /api/bags/[id]のエンドポイントがないので、
+                        // GET /api/bags から探すか、簡易的に名前だけ解決する手段が必要。
+                        // 今回は MVP なので、少し強引だが /api/bags を再取得して探す。
+                        const bagsRes = await fetch("/api/bags");
+                        if (bagsRes.ok) {
+                            const allBags = await bagsRes.json();
+                            bag = allBags.find((b: any) => b.id === newItem.bagId) || null;
+                            console.log('Found Bag via refetch:', bag);
+                        }
+                    } catch (e) {
+                        console.error("Failed to recover bag info", e);
+                    }
+                }
 
                 const newItemWithBag = { ...newItem, bag };
                 console.log('New Item with Bag:', newItemWithBag);
