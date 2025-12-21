@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import type { Item, Bag } from "@/lib/db/schema";
 import AddItemModal from "./AddItemModal";
 import ConfirmModal from "./ConfirmModal";
@@ -10,17 +9,19 @@ interface ItemListProps {
     items: (Item & { bag: Bag | null })[];
     bags: Bag[];
     familyId: string;
+    onAddItem: (item: Item & { bag: Bag | null }) => void;
+    onRemoveItem: (id: string) => void;
 }
 
 export default function ItemList({
-    items: initialItems,
+    items,
     bags,
     familyId,
+    onAddItem,
+    onRemoveItem,
 }: ItemListProps) {
-    const [items, setItems] = useState(initialItems);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
-    const router = useRouter();
 
     const getDaysUntilExpiry = (expiryDate: string) => {
         const today = new Date();
@@ -38,14 +39,25 @@ export default function ItemList({
     const handleDelete = async () => {
         if (!deleteTarget) return;
 
-        await fetch(`/api/items?id=${deleteTarget}`, { method: "DELETE" });
-        setItems(items.filter((item) => item.id !== deleteTarget));
+        // 楽観的更新
+        onRemoveItem(deleteTarget);
         setDeleteTarget(null);
+
+        // バックグラウンドで削除
+        try {
+            const res = await fetch(`/api/items?id=${deleteTarget}`, { method: "DELETE" });
+            if (!res.ok) {
+                console.error('Delete failed');
+                // エラー時のロールバック処理はMVPでは省略（必要なら再fetch）
+            }
+        } catch (error) {
+            console.error('Delete error', error);
+        }
     };
 
-    const handleItemAdded = () => {
-        router.refresh();
+    const handleItemAdded = (newItem: Item & { bag: Bag | null }) => {
         setIsAddModalOpen(false);
+        onAddItem(newItem);
     };
 
     return (

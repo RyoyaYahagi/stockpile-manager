@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import type { Bag } from "@/lib/db/schema";
+import { useState, useEffect } from "react";
+import type { Bag, Item } from "@/lib/db/schema";
 
 interface AddItemModalProps {
     bags: Bag[];
     familyId: string;
     onClose: () => void;
-    onSuccess: () => void;
+    onSuccess: (item: Item & { bag: Bag | null }) => void;
 }
 
 export default function AddItemModal({
@@ -26,6 +26,16 @@ export default function AddItemModal({
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [localBags, setLocalBags] = useState(bags);
 
+    // props.bagsが更新されたらlocalBagsにも反映（重複除外）
+    useEffect(() => {
+        setLocalBags(prev => {
+            const prevIds = new Set(prev.map(b => b.id));
+            const newBags = bags.filter(b => !prevIds.has(b.id));
+            if (newBags.length === 0) return prev;
+            return [...prev, ...newBags];
+        });
+    }, [bags]);
+
     const handleAddBag = async () => {
         if (!newBagName.trim()) return;
 
@@ -36,7 +46,7 @@ export default function AddItemModal({
         });
 
         const newBag = await res.json();
-        setLocalBags([...localBags, newBag]);
+        setLocalBags(prev => [...prev, newBag]);
         setBagId(newBag.id);
         setNewBagName("");
         setShowNewBagInput(false);
@@ -49,7 +59,6 @@ export default function AddItemModal({
         setIsSubmitting(true);
 
         try {
-            console.log('Submitting item:', { name, quantity, expiryDate, bagId, locationNote });
             const res = await fetch("/api/items", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -62,13 +71,21 @@ export default function AddItemModal({
                 }),
             });
 
-            console.log('Response status:', res.status);
-            const data = await res.json();
-            console.log('Response data:', data);
-
             if (res.ok) {
-                onSuccess();
+                const newItem = await res.json();
+                console.log('API Response Item:', newItem);
+
+                // bag情報を付加（楽観的更新用）
+                console.log('Local Bags:', localBags);
+                const bag = localBags.find(b => b.id === newItem.bagId) || null;
+                console.log('Found Bag:', bag);
+
+                const newItemWithBag = { ...newItem, bag };
+                console.log('New Item with Bag:', newItemWithBag);
+
+                onSuccess(newItemWithBag);
             } else {
+                const data = await res.json();
                 console.error('Error:', data);
                 alert('保存に失敗しました: ' + (data.error || 'Unknown error'));
             }

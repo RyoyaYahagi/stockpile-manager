@@ -2,7 +2,7 @@
 
 import { useUser } from "@stackframe/stack";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import ItemList from "@/components/ItemList";
 import Header from "@/components/Header";
 import type { Item, Bag } from "@/lib/db/schema";
@@ -16,46 +16,56 @@ export default function Dashboard() {
     const [familyName, setFamilyName] = useState("家族");
     const [isLoading, setIsLoading] = useState(true);
 
+    const fetchData = useCallback(async () => {
+        try {
+            // ユーザーデータを取得
+            const userRes = await fetch("/api/user");
+            const userData = await userRes.json();
+
+            if (!userData.familyId) {
+                router.push("/family/setup");
+                return;
+            }
+
+            setFamilyId(userData.familyId);
+            setFamilyName(userData.familyName || "家族");
+
+            // 備蓄品と袋を取得
+            const [itemsRes, bagsRes] = await Promise.all([
+                fetch("/api/items"),
+                fetch("/api/bags"),
+            ]);
+
+            const itemsData = await itemsRes.json();
+            const bagsData = await bagsRes.json();
+
+            setItems(itemsData);
+            setBags(bagsData);
+        } catch (error) {
+            console.error("Error fetching data:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [router]);
+
     useEffect(() => {
         if (!user) {
             router.push("/login");
             return;
         }
 
-        const fetchData = async () => {
-            try {
-                // ユーザーデータを取得
-                const userRes = await fetch("/api/user");
-                const userData = await userRes.json();
-
-                if (!userData.familyId) {
-                    router.push("/family/setup");
-                    return;
-                }
-
-                setFamilyId(userData.familyId);
-                setFamilyName(userData.familyName || "家族");
-
-                // 備蓄品と袋を取得
-                const [itemsRes, bagsRes] = await Promise.all([
-                    fetch("/api/items"),
-                    fetch("/api/bags"),
-                ]);
-
-                const itemsData = await itemsRes.json();
-                const bagsData = await bagsRes.json();
-
-                setItems(itemsData);
-                setBags(bagsData);
-            } catch (error) {
-                console.error("Error fetching data:", error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
         fetchData();
-    }, [user, router]);
+    }, [user, router, fetchData]);
+
+    const handleAddItem = (newItem: Item & { bag: Bag | null }) => {
+        setItems((prev) => [...prev, newItem].sort((a, b) =>
+            new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime()
+        ));
+    };
+
+    const handleRemoveItem = (id: string) => {
+        setItems((prev) => prev.filter((item) => item.id !== id));
+    };
 
     if (!user || isLoading) {
         return (
@@ -73,7 +83,13 @@ export default function Dashboard() {
             />
             <main className="max-w-2xl mx-auto px-4 py-6">
                 {familyId && (
-                    <ItemList items={items} bags={bags} familyId={familyId} />
+                    <ItemList
+                        items={items}
+                        bags={bags}
+                        familyId={familyId}
+                        onAddItem={handleAddItem}
+                        onRemoveItem={handleRemoveItem}
+                    />
                 )}
             </main>
         </div>
