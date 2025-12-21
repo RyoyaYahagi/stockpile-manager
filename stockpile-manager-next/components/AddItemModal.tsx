@@ -48,20 +48,36 @@ export default function AddItemModal({
 
         setIsSubmitting(true);
 
-        await fetch("/api/items", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                name: name.trim(),
-                quantity,
-                expiryDate,
-                bagId: bagId || null,
-                locationNote: locationNote.trim() || null,
-            }),
-        });
+        try {
+            console.log('Submitting item:', { name, quantity, expiryDate, bagId, locationNote });
+            const res = await fetch("/api/items", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name: name.trim(),
+                    quantity,
+                    expiryDate,
+                    bagId: bagId || null,
+                    locationNote: locationNote.trim() || null,
+                }),
+            });
 
-        setIsSubmitting(false);
-        onSuccess();
+            console.log('Response status:', res.status);
+            const data = await res.json();
+            console.log('Response data:', data);
+
+            if (res.ok) {
+                onSuccess();
+            } else {
+                console.error('Error:', data);
+                alert('保存に失敗しました: ' + (data.error || 'Unknown error'));
+            }
+        } catch (error) {
+            console.error('Fetch error:', error);
+            alert('通信エラーが発生しました');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (

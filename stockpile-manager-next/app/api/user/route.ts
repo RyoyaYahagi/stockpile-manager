@@ -17,13 +17,13 @@ export async function GET() {
         with: { family: true },
     });
 
-    // ユーザーが存在しない場合は作成
+    // ユーザーが存在しない場合は作成（競合時は無視）
     if (!dbUser) {
         await db.insert(users).values({
             id: user.id,
             displayName: user.displayName || null,
             email: user.primaryEmail || null,
-        });
+        }).onConflictDoNothing();
 
         return NextResponse.json({
             id: user.id,
