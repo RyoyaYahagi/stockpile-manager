@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { Bag, Item } from "@/lib/db/schema";
 
 interface AddItemModalProps {
@@ -25,6 +25,10 @@ export default function AddItemModal({
     const [showNewBagInput, setShowNewBagInput] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [localBags, setLocalBags] = useState(bags);
+    // OCR用
+    const [isScanning, setIsScanning] = useState(false);
+    const [ocrError, setOcrError] = useState<string | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     // props.bagsが更新されたらlocalBagsにも反映（重複除外）
     useEffect(() => {
@@ -35,6 +39,55 @@ export default function AddItemModal({
             return [...prev, ...newBags];
         });
     }, [bags]);
+
+    // OCRで賞味期限を読み取る
+    const handleOcrScan = async (file: File) => {
+        setIsScanning(true);
+        setOcrError(null);
+
+        try {
+            // ファイルをBase64に変換
+            const reader = new FileReader();
+            const base64Promise = new Promise<string>((resolve, reject) => {
+                reader.onload = () => resolve(reader.result as string);
+                reader.onerror = reject;
+            });
+            reader.readAsDataURL(file);
+            const base64 = await base64Promise;
+
+            const formData = new FormData();
+            formData.append("base64", base64);
+
+            const res = await fetch("/api/ocr", {
+                method: "POST",
+                body: formData,
+            });
+
+            const data = await res.json();
+
+            if (res.ok && data.suggestedDate) {
+                setExpiryDate(data.suggestedDate);
+                setOcrError(null);
+            } else if (res.ok && data.dates && data.dates.length > 0) {
+                setExpiryDate(data.dates[0]);
+                setOcrError(null);
+            } else {
+                setOcrError(data.error || "日付を検出できませんでした");
+            }
+        } catch (error) {
+            console.error("OCR error:", error);
+            setOcrError("画像の読み取りに失敗しました");
+        } finally {
+            setIsScanning(false);
+        }
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            handleOcrScan(file);
+        }
+    };
 
     const handleAddBag = async () => {
         if (!newBagName.trim()) return;
@@ -169,13 +222,39 @@ export default function AddItemModal({
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                             賞味期限
                         </label>
-                        <input
-                            type="date"
-                            value={expiryDate}
-                            onChange={(e) => setExpiryDate(e.target.value)}
-                            required
-                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        />
+                        <div className="flex gap-2">
+                            <input
+                                type="date"
+                                value={expiryDate}
+                                onChange={(e) => setExpiryDate(e.target.value)}
+                                required
+                                className="flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                accept="image/*"
+                                capture="environment"
+                                onChange={handleFileChange}
+                                className="hidden"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => fileInputRef.current?.click()}
+                                disabled={isScanning}
+                                className="px-3 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 disabled:opacity-50 flex items-center gap-1"
+                            >
+                                {isScanning ? (
+                                    <span className="animate-spin">⏳</span>
+                                ) : (
+                                    <span>📷</span>
+                                )}
+                                <span className="hidden sm:inline">{isScanning ? "読取中" : "読取"}</span>
+                            </button>
+                        </div>
+                        {ocrError && (
+                            <p className="text-red-500 text-sm mt-1">{ocrError}</p>
+                        )}
                     </div>
 
                     <div>

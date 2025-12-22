@@ -6,7 +6,15 @@ import { NextResponse } from "next/server";
 // LINE Messaging APIのエンドポイント
 const LINE_MESSAGING_API = "https://api.line.me/v2/bot/message/multicast";
 
-export async function GET() {
+export async function GET(request: Request) {
+    // Vercel Cronからのリクエストのみ許可（本番環境）
+    if (process.env.VERCEL_ENV === 'production') {
+        const authHeader = request.headers.get('authorization');
+        if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+    }
+
     if (!process.env.LINE_CHANNEL_ACCESS_TOKEN) {
         return NextResponse.json({ error: "LINE_CHANNEL_ACCESS_TOKEN not set" }, { status: 500 });
     }
