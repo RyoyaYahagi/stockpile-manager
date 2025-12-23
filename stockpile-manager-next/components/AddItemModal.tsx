@@ -28,7 +28,9 @@ export default function AddItemModal({
     // OCR用
     const [isScanning, setIsScanning] = useState(false);
     const [ocrError, setOcrError] = useState<string | null>(null);
-    const fileInputRef = useRef<HTMLInputElement>(null);
+    const cameraInputRef = useRef<HTMLInputElement>(null);
+    const libraryInputRef = useRef<HTMLInputElement>(null);
+    const [showImagePicker, setShowImagePicker] = useState(false);
 
     // props.bagsが更新されたらlocalBagsにも反映（重複除外）
     useEffect(() => {
@@ -269,27 +271,62 @@ export default function AddItemModal({
                                 required
                                 className="flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             />
+                            {/* カメラ用input（capture属性あり） */}
                             <input
                                 type="file"
-                                ref={fileInputRef}
+                                ref={cameraInputRef}
                                 accept="image/*"
                                 capture="environment"
-                                onChange={handleFileChange}
+                                onChange={(e) => {
+                                    handleFileChange(e);
+                                    setShowImagePicker(false);
+                                }}
                                 className="hidden"
                             />
-                            <button
-                                type="button"
-                                onClick={() => fileInputRef.current?.click()}
-                                disabled={isScanning}
-                                className="px-3 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 disabled:opacity-50 flex items-center gap-1"
-                            >
-                                {isScanning ? (
-                                    <span className="animate-spin">⏳</span>
-                                ) : (
-                                    <span>📷</span>
+                            {/* ライブラリ用input（capture属性なし） */}
+                            <input
+                                type="file"
+                                ref={libraryInputRef}
+                                accept="image/*"
+                                onChange={(e) => {
+                                    handleFileChange(e);
+                                    setShowImagePicker(false);
+                                }}
+                                className="hidden"
+                            />
+                            <div className="relative">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowImagePicker(!showImagePicker)}
+                                    disabled={isScanning}
+                                    className="px-3 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 disabled:opacity-50 flex items-center gap-1"
+                                >
+                                    {isScanning ? (
+                                        <span className="animate-spin">⏳</span>
+                                    ) : (
+                                        <span>📷</span>
+                                    )}
+                                    <span className="hidden sm:inline">{isScanning ? "読取中" : "読取"}</span>
+                                </button>
+                                {showImagePicker && !isScanning && (
+                                    <div className="absolute right-0 top-full mt-1 bg-white border rounded-lg shadow-lg z-10 min-w-[140px]">
+                                        <button
+                                            type="button"
+                                            onClick={() => cameraInputRef.current?.click()}
+                                            className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
+                                        >
+                                            📷 カメラ
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => libraryInputRef.current?.click()}
+                                            className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2 border-t"
+                                        >
+                                            🖼️ ライブラリ
+                                        </button>
+                                    </div>
                                 )}
-                                <span className="hidden sm:inline">{isScanning ? "読取中" : "読取"}</span>
-                            </button>
+                            </div>
                         </div>
                         {ocrError && (
                             <p className="text-red-500 text-sm mt-1">{ocrError}</p>
