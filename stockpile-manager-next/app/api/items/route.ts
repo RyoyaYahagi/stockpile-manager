@@ -27,33 +27,23 @@ export async function GET() {
     return NextResponse.json(result);
 }
 
-const MOCK_USER = {
-    id: 'test-user-id',
-    familyId: 'test-family-id',
-};
+// 認証スキップ用モック削除
 
 export async function POST(request: NextRequest) {
     try {
-        let userId = MOCK_USER.id;
-        let familyId = MOCK_USER.familyId;
-
-        // 認証スキップが無効な場合はStack Authを使用
-        if (process.env.NEXT_PUBLIC_SKIP_AUTH !== 'true') {
-            const user = await stackServerApp.getUser();
-            if (!user) {
-                return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-            }
-            userId = user.id;
-
-            const dbUser = await db.query.users.findFirst({
-                where: eq(users.id, userId),
-            });
-
-            if (!dbUser?.familyId) {
-                return NextResponse.json({ error: "No family" }, { status: 400 });
-            }
-            familyId = dbUser.familyId;
+        const user = await stackServerApp.getUser();
+        if (!user) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
+
+        const dbUser = await db.query.users.findFirst({
+            where: eq(users.id, user.id),
+        });
+
+        if (!dbUser?.familyId) {
+            return NextResponse.json({ error: "No family" }, { status: 400 });
+        }
+        const familyId = dbUser.familyId;
 
         const body = await request.json();
         console.log('[API] POST items body:', body); // デバッグログ

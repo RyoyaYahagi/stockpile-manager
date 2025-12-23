@@ -215,7 +215,7 @@ export default function AddItemModal({
             } else {
                 const data = await res.json();
                 console.error('Error:', data);
-                alert('保存に失敗しました: ' + (data.error || 'Unknown error'));
+                alert('保存に失敗しました: ' + (data.error || 'Unknown error') + (data.details ? `\n詳細: ${data.details}` : ''));
             }
         } catch (error) {
             console.error('Fetch error:', error);

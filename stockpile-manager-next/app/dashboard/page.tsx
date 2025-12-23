@@ -9,8 +9,8 @@ import LineSettingsModal from "@/components/LineSettingsModal";
 import FamilyInviteModal from "@/components/FamilyInviteModal";
 import type { Item, Bag } from "@/lib/db/schema";
 
-// テスト用: NEXT_PUBLIC_SKIP_AUTH=true で認証スキップ
-const SKIP_AUTH = process.env.NEXT_PUBLIC_SKIP_AUTH === 'true';
+// テスト用設定削除
+const SKIP_AUTH = false;
 
 export default function Dashboard() {
     const user = useUser();
