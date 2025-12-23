@@ -40,20 +40,59 @@ export default function AddItemModal({
         });
     }, [bags]);
 
+    // 画像を圧縮する（OCR.space APIの1MB制限対応）
+    const compressImage = (file: File, maxSizeKB: number = 900): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            img.onload = () => {
+                // 最大幅/高さを設定（大きい画像をリサイズ）
+                let width = img.width;
+                let height = img.height;
+                const maxDimension = 1600;
+
+                if (width > maxDimension || height > maxDimension) {
+                    if (width > height) {
+                        height = (height / width) * maxDimension;
+                        width = maxDimension;
+                    } else {
+                        width = (width / height) * maxDimension;
+                        height = maxDimension;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                ctx?.drawImage(img, 0, 0, width, height);
+
+                // 品質を調整してサイズを制限
+                let quality = 0.8;
+                let base64 = canvas.toDataURL('image/jpeg', quality);
+
+                // サイズが大きい場合は品質を下げる
+                while (base64.length > maxSizeKB * 1024 * 1.37 && quality > 0.1) {
+                    quality -= 0.1;
+                    base64 = canvas.toDataURL('image/jpeg', quality);
+                }
+
+                resolve(base64);
+            };
+
+            img.onerror = reject;
+            img.src = URL.createObjectURL(file);
+        });
+    };
+
     // OCRで賞味期限を読み取る
     const handleOcrScan = async (file: File) => {
         setIsScanning(true);
         setOcrError(null);
 
         try {
-            // ファイルをBase64に変換
-            const reader = new FileReader();
-            const base64Promise = new Promise<string>((resolve, reject) => {
-                reader.onload = () => resolve(reader.result as string);
-                reader.onerror = reject;
-            });
-            reader.readAsDataURL(file);
-            const base64 = await base64Promise;
+            // 画像を圧縮してBase64に変換
+            const base64 = await compressImage(file);
 
             const formData = new FormData();
             formData.append("base64", base64);
