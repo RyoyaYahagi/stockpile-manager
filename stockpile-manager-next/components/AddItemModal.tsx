@@ -228,7 +228,7 @@ export default function AddItemModal({
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
             <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
-                <h2 className="text-xl font-bold mb-4">備蓄品を追加</h2>
+                <h2 className="text-xl font-bold mb-4 text-gray-900">備蓄品を追加</h2>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
@@ -313,14 +313,14 @@ export default function AddItemModal({
                                         <button
                                             type="button"
                                             onClick={() => cameraInputRef.current?.click()}
-                                            className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
+                                            className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2 text-gray-900"
                                         >
                                             📷 カメラ
                                         </button>
                                         <button
                                             type="button"
                                             onClick={() => libraryInputRef.current?.click()}
-                                            className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2 border-t"
+                                            className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2 border-t text-gray-900"
                                         >
                                             🖼️ ライブラリ
                                         </button>
@@ -395,7 +395,7 @@ export default function AddItemModal({
                         <button
                             type="button"
                             onClick={onClose}
-                            className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50"
+                            className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50 text-gray-900"
                         >
                             キャンセル
                         </button>
