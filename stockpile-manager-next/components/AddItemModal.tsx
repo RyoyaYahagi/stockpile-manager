@@ -268,7 +268,6 @@ export default function AddItemModal({
                                 type="date"
                                 value={expiryDate}
                                 onChange={(e) => setExpiryDate(e.target.value)}
-                                required
                                 className="flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
                             />
                             {/* カメラ用input（capture属性あり） */}

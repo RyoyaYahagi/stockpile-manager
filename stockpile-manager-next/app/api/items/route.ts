@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
         familyId: dbUser.familyId,
         name,
         quantity: quantity || 1,
-        expiryDate,
+        expiryDate: expiryDate || null,
         bagId: bagId || null,
         locationNote: locationNote || null,
     }).returning();
@@ -112,7 +112,7 @@ export async function PUT(request: NextRequest) {
         .set({
             name,
             quantity: quantity || 1,
-            expiryDate,
+            expiryDate: expiryDate || null,
             bagId: bagId || null,
             locationNote: locationNote || null,
         })
