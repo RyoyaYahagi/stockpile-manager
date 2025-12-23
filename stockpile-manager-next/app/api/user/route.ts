@@ -7,6 +7,17 @@ import { NextResponse } from "next/server";
 export async function GET() {
     const user = await stackServerApp.getUser();
 
+    // 認証スキップが有効な場合はモックデータを返す
+    if (process.env.NEXT_PUBLIC_SKIP_AUTH === 'true') {
+        return NextResponse.json({
+            id: 'test-user-id',
+            familyId: 'test-family-id',
+            familyName: 'テスト家族',
+            displayName: 'テストユーザー',
+            lineUserId: null,
+        });
+    }
+
     if (!user) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
