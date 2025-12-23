@@ -18,7 +18,7 @@ export default function EditItemModal({
 }: EditItemModalProps) {
     const [name, setName] = useState(item.name);
     const [quantity, setQuantity] = useState(item.quantity || 1);
-    const [expiryDate, setExpiryDate] = useState(item.expiryDate);
+    const [expiryDate, setExpiryDate] = useState(item.expiryDate || "");
     const [bagId, setBagId] = useState(item.bagId || "");
     const [locationNote, setLocationNote] = useState(item.locationNote || "");
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -198,7 +198,6 @@ export default function EditItemModal({
                                 type="date"
                                 value={expiryDate}
                                 onChange={(e) => setExpiryDate(e.target.value)}
-                                required
                                 className="flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
                             />
                             <input

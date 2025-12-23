@@ -102,16 +102,18 @@ export default function ItemList({
             ) : (
                 <ul className="space-y-3">
                     {items.map((item) => {
-                        const daysLeft = getDaysUntilExpiry(item.expiryDate);
+                        const daysLeft = item.expiryDate ? getDaysUntilExpiry(item.expiryDate) : null;
                         let statusClass = "text-gray-800";
                         let statusText = "";
 
-                        if (daysLeft < 0) {
-                            statusClass = "text-red-600 font-semibold";
-                            statusText = `（${Math.abs(daysLeft)}日経過）`;
-                        } else if (daysLeft <= 7) {
-                            statusClass = "text-orange-600 font-semibold";
-                            statusText = `（あと${daysLeft}日）`;
+                        if (daysLeft !== null) {
+                            if (daysLeft < 0) {
+                                statusClass = "text-red-600 font-semibold";
+                                statusText = `（${Math.abs(daysLeft)}日経過）`;
+                            } else if (daysLeft <= 7) {
+                                statusClass = "text-orange-600 font-semibold";
+                                statusText = `（あと${daysLeft}日）`;
+                            }
                         }
 
                         return (
@@ -128,7 +130,7 @@ export default function ItemList({
                                         )}
                                     </h3>
                                     <p className={statusClass}>
-                                        期限: {formatDate(item.expiryDate)} {statusText}
+                                        期限: {item.expiryDate ? `${formatDate(item.expiryDate)} ${statusText}` : "期限なし"}
                                     </p>
                                     <p className="text-sm text-gray-700">
                                         💼 {item.bag?.name || "未指定"}
