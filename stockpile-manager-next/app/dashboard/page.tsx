@@ -6,7 +6,11 @@ import { useEffect, useState, useCallback } from "react";
 import ItemList from "@/components/ItemList";
 import Header from "@/components/Header";
 import LineSettingsModal from "@/components/LineSettingsModal";
+import FamilyInviteModal from "@/components/FamilyInviteModal";
 import type { Item, Bag } from "@/lib/db/schema";
+
+// テスト用: NEXT_PUBLIC_SKIP_AUTH=true で認証スキップ
+const SKIP_AUTH = process.env.NEXT_PUBLIC_SKIP_AUTH === 'true';
 
 export default function Dashboard() {
     const user = useUser();
@@ -19,6 +23,7 @@ export default function Dashboard() {
     // LINE設定追加
     const [lineUserId, setLineUserId] = useState<string | null>(null);
     const [isLineModalOpen, setIsLineModalOpen] = useState(false);
+    const [isFamilyInviteModalOpen, setIsFamilyInviteModalOpen] = useState(false);
 
     const fetchData = useCallback(async () => {
         try {
@@ -54,7 +59,8 @@ export default function Dashboard() {
     }, [router]);
 
     useEffect(() => {
-        if (!user) {
+        // 認証スキップモードの場合はリダイレクトしない
+        if (!SKIP_AUTH && !user) {
             router.push("/login");
             return;
         }
@@ -64,7 +70,7 @@ export default function Dashboard() {
 
     const handleAddItem = (newItem: Item & { bag: Bag | null }) => {
         setItems((prev) => [...prev, newItem].sort((a, b) =>
-            new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime()
+            new Date(a.expiryDate || "").getTime() - new Date(b.expiryDate || "").getTime()
         ));
     };
 
@@ -72,7 +78,17 @@ export default function Dashboard() {
         setItems((prev) => prev.filter((item) => item.id !== id));
     };
 
-    if (!user || isLoading) {
+    const handleUpdateItem = (updatedItem: Item & { bag: Bag | null }) => {
+        setItems((prev) =>
+            prev.map((item) =>
+                item.id === updatedItem.id ? updatedItem : item
+            ).sort((a, b) =>
+                new Date(a.expiryDate || "").getTime() - new Date(b.expiryDate || "").getTime()
+            )
+        );
+    };
+
+    if ((!SKIP_AUTH && !user) || isLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
@@ -80,14 +96,26 @@ export default function Dashboard() {
         );
     }
 
+    // 認証スキップ時のモック表示名
+    const displayName = SKIP_AUTH
+        ? 'テストユーザー'
+        : (user?.displayName || user?.primaryEmail || 'ユーザー');
+
     return (
         <div className="min-h-screen bg-gray-50">
             <Header
-                displayName={user.displayName || user.primaryEmail || "ユーザー"}
+                displayName={displayName}
                 familyName={familyName}
             />
             <main className="max-w-2xl mx-auto px-4 py-6">
-                <div className="flex justify-end mb-4">
+                <div className="flex justify-end gap-2 mb-4">
+                    <button
+                        onClick={() => setIsFamilyInviteModalOpen(true)}
+                        className="text-sm px-3 py-1 rounded border flex items-center gap-1 bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+                    >
+                        <span>👨‍👩‍👧‍👦</span>
+                        家族に招待
+                    </button>
                     <button
                         onClick={() => setIsLineModalOpen(true)}
                         className={`text-sm px-3 py-1 rounded border flex items-center gap-1 ${lineUserId ? "bg-green-50 text-green-700 border-green-200" : "bg-gray-50 text-gray-500 border-gray-200"}`}
@@ -104,6 +132,7 @@ export default function Dashboard() {
                         familyId={familyId}
                         onAddItem={handleAddItem}
                         onRemoveItem={handleRemoveItem}
+                        onUpdateItem={handleUpdateItem}
                     />
                 )}
 
@@ -112,6 +141,12 @@ export default function Dashboard() {
                         currentLineUserId={lineUserId}
                         onClose={() => setIsLineModalOpen(false)}
                         onSave={(id) => setLineUserId(id)}
+                    />
+                )}
+
+                {isFamilyInviteModalOpen && (
+                    <FamilyInviteModal
+                        onClose={() => setIsFamilyInviteModalOpen(false)}
                     />
                 )}
             </main>

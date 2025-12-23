@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
         familyId: dbUser.familyId,
         name,
         quantity: quantity || 1,
-        expiryDate,
+        expiryDate: expiryDate || null,
         bagId: bagId || null,
         locationNote: locationNote || null,
     }).returning();
@@ -85,4 +85,50 @@ export async function DELETE(request: NextRequest) {
     );
 
     return NextResponse.json({ success: true });
+}
+
+export async function PUT(request: NextRequest) {
+    const user = await stackServerApp.getUser();
+    if (!user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const dbUser = await db.query.users.findFirst({
+        where: eq(users.id, user.id),
+    });
+
+    if (!dbUser?.familyId) {
+        return NextResponse.json({ error: "No family" }, { status: 400 });
+    }
+
+    const body = await request.json();
+    const { id, name, quantity, expiryDate, bagId, locationNote } = body;
+
+    if (!id) {
+        return NextResponse.json({ error: "Missing id" }, { status: 400 });
+    }
+
+    const [updatedItem] = await db.update(items)
+        .set({
+            name,
+            quantity: quantity || 1,
+            expiryDate: expiryDate || null,
+            bagId: bagId || null,
+            locationNote: locationNote || null,
+        })
+        .where(
+            and(
+                eq(items.id, id),
+                eq(items.familyId, dbUser.familyId)
+            )
+        )
+        .returning();
+
+    // bag情報も含めて返す
+    const itemWithBag = await db.query.items.findFirst({
+        where: eq(items.id, id),
+        with: { bag: true },
+    });
+
+    return NextResponse.json(itemWithBag);
 }

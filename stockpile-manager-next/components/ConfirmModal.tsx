@@ -10,12 +10,12 @@ export default function ConfirmModal({ message, onConfirm, onCancel }: ConfirmMo
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
             <div className="bg-white rounded-xl p-6 w-full max-w-sm mx-4 text-center">
-                <h2 className="text-lg font-semibold mb-4">確認</h2>
-                <p className="text-gray-600 mb-6">{message}</p>
+                <h2 className="text-lg font-semibold mb-4 text-gray-900">確認</h2>
+                <p className="text-gray-900 mb-6">{message}</p>
                 <div className="flex gap-3">
                     <button
                         onClick={onCancel}
-                        className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50"
+                        className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50 text-gray-900"
                     >
                         キャンセル
                     </button>

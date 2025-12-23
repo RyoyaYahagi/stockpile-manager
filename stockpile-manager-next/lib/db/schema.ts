@@ -33,7 +33,7 @@ export const items = pgTable('items', {
     familyId: uuid('family_id').notNull().references(() => families.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
     quantity: integer('quantity').default(1),
-    expiryDate: date('expiry_date').notNull(),
+    expiryDate: date('expiry_date'),
     bagId: uuid('bag_id').references(() => bags.id, { onDelete: 'set null' }),
     locationNote: text('location_note'),
     notified30: boolean('notified_30').default(false),
