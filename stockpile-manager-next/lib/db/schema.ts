@@ -6,6 +6,7 @@ export const families = pgTable('families', {
     id: uuid('id').primaryKey().defaultRandom(),
     name: text('name').notNull(),
     inviteCode: text('invite_code').unique().notNull(),
+    lineGroupId: text('line_group_id'),
     createdAt: timestamp('created_at').defaultNow(),
 });
 
