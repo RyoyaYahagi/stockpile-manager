@@ -70,7 +70,7 @@ export default function Dashboard() {
 
     const handleAddItem = (newItem: Item & { bag: Bag | null }) => {
         setItems((prev) => [...prev, newItem].sort((a, b) =>
-            new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime()
+            new Date(a.expiryDate || "").getTime() - new Date(b.expiryDate || "").getTime()
         ));
     };
 
@@ -83,7 +83,7 @@ export default function Dashboard() {
             prev.map((item) =>
                 item.id === updatedItem.id ? updatedItem : item
             ).sort((a, b) =>
-                new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime()
+                new Date(a.expiryDate || "").getTime() - new Date(b.expiryDate || "").getTime()
             )
         );
     };

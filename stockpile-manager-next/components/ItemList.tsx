@@ -74,7 +74,7 @@ export default function ItemList({
     return (
         <div>
             <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold text-gray-700">
+                <h2 className="text-lg font-semibold text-gray-900">
                     備蓄品一覧 ({items.length}件)
                 </h2>
                 <div className="flex gap-2">
@@ -94,7 +94,7 @@ export default function ItemList({
             </div>
 
             {items.length === 0 ? (
-                <div className="text-center py-12 text-gray-500">
+                <div className="text-center py-12 text-gray-700">
                     <p className="text-4xl mb-4">📦</p>
                     <p>備蓄品がありません</p>
                     <p className="text-sm">「+ 追加」ボタンで備蓄品を登録しましょう</p>
@@ -103,7 +103,7 @@ export default function ItemList({
                 <ul className="space-y-3">
                     {items.map((item) => {
                         const daysLeft = getDaysUntilExpiry(item.expiryDate);
-                        let statusClass = "text-gray-600";
+                        let statusClass = "text-gray-800";
                         let statusText = "";
 
                         if (daysLeft < 0) {
@@ -121,16 +121,16 @@ export default function ItemList({
                                 className="bg-white rounded-lg shadow p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-colors"
                             >
                                 <div>
-                                    <h3 className="font-medium text-gray-800">
+                                    <h3 className="font-medium text-gray-900">
                                         {item.name}
                                         {item.quantity && item.quantity > 1 && (
-                                            <span className="text-gray-500"> × {item.quantity}</span>
+                                            <span className="text-gray-700"> × {item.quantity}</span>
                                         )}
                                     </h3>
                                     <p className={statusClass}>
                                         期限: {formatDate(item.expiryDate)} {statusText}
                                     </p>
-                                    <p className="text-sm text-gray-500">
+                                    <p className="text-sm text-gray-700">
                                         💼 {item.bag?.name || "未指定"}
                                         {item.locationNote && ` / ${item.locationNote}`}
                                     </p>
