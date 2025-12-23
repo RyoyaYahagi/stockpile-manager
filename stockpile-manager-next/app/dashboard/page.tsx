@@ -88,6 +88,10 @@ export default function Dashboard() {
         );
     };
 
+    const handleAddBag = (newBag: Bag) => {
+        setBags((prev) => [...prev, newBag].sort((a, b) => a.name.localeCompare(b.name)));
+    };
+
     if ((!SKIP_AUTH && !user) || isLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
@@ -133,6 +137,7 @@ export default function Dashboard() {
                         onAddItem={handleAddItem}
                         onRemoveItem={handleRemoveItem}
                         onUpdateItem={handleUpdateItem}
+                        onAddBag={handleAddBag}
                     />
                 )}
 
