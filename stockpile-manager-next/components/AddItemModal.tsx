@@ -148,7 +148,7 @@ export default function AddItemModal({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!name.trim() || !expiryDate) return;
+        if (!name.trim()) return;
 
         setIsSubmitting(true);
 
@@ -176,7 +176,7 @@ export default function AddItemModal({
                 body: JSON.stringify({
                     name: name.trim(),
                     quantity,
-                    expiryDate,
+                    expiryDate: expiryDate || null,
                     bagId: finalBagId || null,
                     locationNote: locationNote.trim() || null,
                 }),

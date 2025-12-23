@@ -151,7 +151,7 @@ export default function ItemList({
                 </div>
             ) : (
                 <ul className="space-y-3">
-                    {items.map((item) => {
+                    {filteredItems.map((item) => {
                         const daysLeft = item.expiryDate ? getDaysUntilExpiry(item.expiryDate) : null;
                         let statusClass = "text-gray-800";
                         let statusText = "";
