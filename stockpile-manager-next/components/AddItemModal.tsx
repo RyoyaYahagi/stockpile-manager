@@ -8,6 +8,7 @@ interface AddItemModalProps {
     familyId: string;
     onClose: () => void;
     onSuccess: (item: Item & { bag: Bag | null }) => void;
+    onAddBag: (bag: Bag) => void;
 }
 
 export default function AddItemModal({
@@ -15,6 +16,7 @@ export default function AddItemModal({
     familyId,
     onClose,
     onSuccess,
+    onAddBag,
 }: AddItemModalProps) {
     const [name, setName] = useState("");
     const [quantity, setQuantity] = useState(1);
@@ -144,6 +146,7 @@ export default function AddItemModal({
         setBagId(newBag.id);
         setNewBagName("");
         setShowNewBagInput(false);
+        onAddBag(newBag); // 親に通知
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -167,6 +170,7 @@ export default function AddItemModal({
                     const newBag = await bagRes.json();
                     setLocalBags(prev => [...prev, newBag]);
                     finalBagId = newBag.id;
+                    onAddBag(newBag); // 親に通知
                 }
             }
 
