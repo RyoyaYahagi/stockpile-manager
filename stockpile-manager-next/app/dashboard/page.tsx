@@ -176,6 +176,12 @@ export default function Dashboard() {
                         onClose={() => setIsFamilyInviteModalOpen(false)}
                     />
                 )}
+
+                {isFamilyInviteModalOpen && (
+                    <FamilyInviteModal
+                        onClose={() => setIsFamilyInviteModalOpen(false)}
+                    />
+                )}
             </main>
         </div>
     );
