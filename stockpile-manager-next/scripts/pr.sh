@@ -28,9 +28,20 @@ if [ "$BRANCH" = "main" ] || [ "$BRANCH" = "master" ]; then
     exit 1
 fi
 
+# ベースブランチを決定
+# - developブランチ → mainへPR
+# - それ以外（feature/*等） → developへPR
+if [ "$BRANCH" = "develop" ]; then
+    BASE_BRANCH="main"
+else
+    BASE_BRANCH="develop"
+fi
+
+echo "Base branch: $BASE_BRANCH"
+
 # コミットメッセージからPR情報を生成
-COMMITS=$(git log main..$BRANCH --pretty=format:"- %s" --reverse 2>/dev/null || git log origin/main..$BRANCH --pretty=format:"- %s" --reverse 2>/dev/null || git log -10 --pretty=format:"- %s" --reverse)
-FIRST_COMMIT=$(git log main..$BRANCH --pretty=format:"%s" --reverse 2>/dev/null | head -1 || git log origin/main..$BRANCH --pretty=format:"%s" --reverse 2>/dev/null | head -1 || git log -1 --pretty=format:"%s")
+COMMITS=$(git log origin/$BASE_BRANCH..$BRANCH --pretty=format:"- %s" --reverse 2>/dev/null || git log -10 --pretty=format:"- %s" --reverse)
+FIRST_COMMIT=$(git log origin/$BASE_BRANCH..$BRANCH --pretty=format:"%s" --reverse 2>/dev/null | head -1 || git log -1 --pretty=format:"%s")
 
 # コミットプレフィックスからラベルを決定
 LABELS=""
@@ -51,7 +62,7 @@ elif echo "$FIRST_COMMIT" | grep -q "^hotfix"; then
 fi
 
 # 差分統計を取得
-DIFF_STAT=$(git diff origin/main --stat 2>/dev/null | tail -1 || echo "変更統計取得不可")
+DIFF_STAT=$(git diff origin/$BASE_BRANCH --stat 2>/dev/null | tail -1 || echo "変更統計取得不可")
 
 # PR本文を生成（テンプレート準拠）
 BODY="## 概要
@@ -93,6 +104,9 @@ fi
 if [ "$DRAFT" = true ]; then
     PR_ARGS+=(--draft)
 fi
+
+# ベースブランチを指定
+PR_ARGS+=(--base "$BASE_BRANCH")
 
 gh pr create "${PR_ARGS[@]}"
 
