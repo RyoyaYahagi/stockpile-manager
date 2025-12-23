@@ -37,6 +37,7 @@ export async function GET() {
     return NextResponse.json({
         inviteCode: family.inviteCode,
         familyName: family.name,
+        lineGroupId: family.lineGroupId,
         members: members.map(m => ({
             id: m.id,
             displayName: m.displayName || m.email || "名前未設定",
@@ -93,4 +94,31 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+}
+
+// 家族情報を更新（lineGroupIdなど）
+export async function PUT(request: NextRequest) {
+    const user = await stackServerApp.getUser();
+    if (!user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const dbUser = await db.query.users.findFirst({
+        where: eq(users.id, user.id),
+    });
+
+    if (!dbUser?.familyId) {
+        return NextResponse.json({ error: "Family not found" }, { status: 404 });
+    }
+
+    const body = await request.json();
+    const { lineGroupId } = body;
+
+    const newLineGroupId = lineGroupId ? lineGroupId.trim() : null;
+
+    await db.update(families)
+        .set({ lineGroupId: newLineGroupId })
+        .where(eq(families.id, dbUser.familyId));
+
+    return NextResponse.json({ success: true, lineGroupId: newLineGroupId });
 }

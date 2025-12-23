@@ -4,7 +4,8 @@ import { eq, and, lte, inArray } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
 // LINE Messaging APIのエンドポイント
-const LINE_MESSAGING_API = "https://api.line.me/v2/bot/message/multicast";
+const LINE_PUSH_API = "https://api.line.me/v2/bot/message/push";
+const LINE_MULTICAST_API = "https://api.line.me/v2/bot/message/multicast";
 
 export async function GET(request: Request) {
     // Vercel Cronからのリクエストのみ許可（本番環境）
@@ -47,7 +48,11 @@ export async function GET(request: Request) {
         }
 
         // 家族ごとにメッセージをまとめる
-        const familyNotifications = new Map<string, { userIds: string[], items: typeof targetItems }>();
+        const familyNotifications = new Map<string, {
+            lineGroupId: string | null;
+            userIds: string[];
+            items: typeof targetItems;
+        }>();
 
         for (const item of targetItems) {
             const family = item.family;
@@ -57,10 +62,12 @@ export async function GET(request: Request) {
                 .map(u => u.lineUserId)
                 .filter((id): id is string => !!id);
 
-            if (lineUserIds.length === 0) continue;
-
             if (!familyNotifications.has(family.id)) {
-                familyNotifications.set(family.id, { userIds: lineUserIds, items: [] });
+                familyNotifications.set(family.id, {
+                    lineGroupId: family.lineGroupId,
+                    userIds: lineUserIds,
+                    items: []
+                });
             }
             familyNotifications.get(family.id)!.items.push(item);
         }
@@ -69,35 +76,68 @@ export async function GET(request: Request) {
         const results = [];
         for (const [familyId, data] of familyNotifications.entries()) {
             const message = createLineMessage(data.items);
-            const uniqueUserIds = [...new Set(data.userIds)];
+            let success = false;
 
-            const res = await fetch(LINE_MESSAGING_API, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${process.env.LINE_CHANNEL_ACCESS_TOKEN}`
-                },
-                body: JSON.stringify({
-                    to: uniqueUserIds,
-                    messages: [
-                        {
-                            type: 'text',
-                            text: message
-                        }
-                    ]
-                })
-            });
+            // グループIDがあればグループに送信（Push API）
+            if (data.lineGroupId) {
+                const res = await fetch(LINE_PUSH_API, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${process.env.LINE_CHANNEL_ACCESS_TOKEN}`
+                    },
+                    body: JSON.stringify({
+                        to: data.lineGroupId,
+                        messages: [
+                            {
+                                type: 'text',
+                                text: message
+                            }
+                        ]
+                    })
+                });
+                success = res.ok;
+                if (!res.ok) {
+                    console.error(`Failed to send LINE message to group ${data.lineGroupId}`, await res.text());
+                }
+            }
+            // グループIDがなければ個人ユーザーに送信（Multicast API）
+            else if (data.userIds.length > 0) {
+                const uniqueUserIds = [...new Set(data.userIds)];
+                const res = await fetch(LINE_MULTICAST_API, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${process.env.LINE_CHANNEL_ACCESS_TOKEN}`
+                    },
+                    body: JSON.stringify({
+                        to: uniqueUserIds,
+                        messages: [
+                            {
+                                type: 'text',
+                                text: message
+                            }
+                        ]
+                    })
+                });
+                success = res.ok;
+                if (!res.ok) {
+                    console.error(`Failed to send LINE message to family ${familyId}`, await res.text());
+                }
+            } else {
+                // 送信先がない場合はスキップ
+                continue;
+            }
 
-            if (res.ok) {
+            if (success) {
                 // 通知済みフラグを更新
                 const itemIds = data.items.map(i => i.id);
                 await db.update(items)
                     .set({ notified7: true })
                     .where(inArray(items.id, itemIds));
 
-                results.push({ familyId, success: true });
+                results.push({ familyId, success: true, type: data.lineGroupId ? 'group' : 'individual' });
             } else {
-                console.error(`Failed to send LINE message to family ${familyId}`, await res.text());
                 results.push({ familyId, success: false });
             }
         }
