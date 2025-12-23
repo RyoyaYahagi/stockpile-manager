@@ -15,6 +15,7 @@ interface ItemListProps {
     onRemoveItem: (id: string) => void;
     onUpdateItem: (updatedItem: Item & { bag: Bag | null }) => void;
     onAddBag: (bag: Bag) => void;
+    onRemoveBag: (bagId: string) => void;
 }
 
 export default function ItemList({
@@ -25,6 +26,7 @@ export default function ItemList({
     onRemoveItem,
     onUpdateItem,
     onAddBag,
+    onRemoveBag,
 }: ItemListProps) {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -36,6 +38,34 @@ export default function ItemList({
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [isBulkDeleteConfirmOpen, setIsBulkDeleteConfirmOpen] = useState(false);
     const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+
+    // 袋削除用
+    const [deleteBagTarget, setDeleteBagTarget] = useState<string | null>(null);
+    const [isDeletingBag, setIsDeletingBag] = useState(false);
+
+    const handleDeleteBag = async () => {
+        if (!deleteBagTarget) return;
+        setIsDeletingBag(true);
+
+        try {
+            const res = await fetch(`/api/bags?id=${deleteBagTarget}`, { method: "DELETE" });
+            if (res.ok) {
+                onRemoveBag(deleteBagTarget);
+                // 現在表示中の袋が削除された場合は「すべて」に戻る
+                if (activeTab === deleteBagTarget) {
+                    setActiveTab("ALL");
+                }
+            } else {
+                alert("袋の削除に失敗しました");
+            }
+        } catch (error) {
+            console.error("Delete bag error:", error);
+            alert("袋の削除に失敗しました");
+        } finally {
+            setDeleteBagTarget(null);
+            setIsDeletingBag(false);
+        }
+    };
 
     const getDaysUntilExpiry = (expiryDate: string) => {
         const today = new Date();
@@ -175,16 +205,27 @@ export default function ItemList({
                         すべて
                     </button>
                     {bags.map((bag) => (
-                        <button
-                            key={bag.id}
-                            onClick={() => setActiveTab(bag.id)}
-                            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${activeTab === bag.id
-                                ? "bg-blue-500 text-white"
-                                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                                }`}
-                        >
-                            {bag.name}
-                        </button>
+                        <div key={bag.id} className="relative group flex items-center">
+                            <button
+                                onClick={() => setActiveTab(bag.id)}
+                                className={`px-4 py-2 pr-8 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${activeTab === bag.id
+                                    ? "bg-blue-500 text-white"
+                                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                                    }`}
+                            >
+                                {bag.name}
+                            </button>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setDeleteBagTarget(bag.id);
+                                }}
+                                className="absolute right-1.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-red-500 text-white text-xs hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                                title="この袋を削除"
+                            >
+                                ×
+                            </button>
+                        </div>
                     ))}
                     <button
                         onClick={() => setActiveTab("UNASSIGNED")}
@@ -313,6 +354,14 @@ export default function ItemList({
                     message={`選択した ${selectedIds.size} 件の備蓄品を削除しますか？`}
                     onConfirm={handleBulkDelete}
                     onCancel={() => setIsBulkDeleteConfirmOpen(false)}
+                />
+            )}
+
+            {deleteBagTarget && (
+                <ConfirmModal
+                    message={`この袋を削除しますか？袋に入っている備蓄品は「未指定」に移動します。`}
+                    onConfirm={handleDeleteBag}
+                    onCancel={() => setDeleteBagTarget(null)}
                 />
             )}
 
