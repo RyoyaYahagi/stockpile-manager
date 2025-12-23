@@ -5,6 +5,7 @@ import type { Item, Bag } from "@/lib/db/schema";
 import AddItemModal from "./AddItemModal";
 import EditItemModal from "./EditItemModal";
 import ConfirmModal from "./ConfirmModal";
+import ImportItemsModal from "./ImportItemsModal";
 
 interface ItemListProps {
     items: (Item & { bag: Bag | null })[];
@@ -24,6 +25,7 @@ export default function ItemList({
     onUpdateItem,
 }: ItemListProps) {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [editTarget, setEditTarget] = useState<(Item & { bag: Bag | null }) | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<string>("ALL");
@@ -76,14 +78,22 @@ export default function ItemList({
         <div>
             <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg font-semibold text-gray-900">
-                    備蓄品一覧 ({filteredItems.length}/{items.length}件)
+                    備蓄品一覧 ({items.length}件)
                 </h2>
-                <button
-                    onClick={() => setIsAddModalOpen(true)}
-                    className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
-                >
-                    + 追加
-                </button>
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => setIsImportModalOpen(true)}
+                        className="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm"
+                    >
+                        📥 インポート
+                    </button>
+                    <button
+                        onClick={() => setIsAddModalOpen(true)}
+                        className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+                    >
+                        + 追加
+                    </button>
+                </div>
             </div>
 
             {/* タブメニュー */}
@@ -136,7 +146,7 @@ export default function ItemList({
                 </div>
             ) : (
                 <ul className="space-y-3">
-                    {filteredItems.map((item) => {
+                    {items.map((item) => {
                         const daysLeft = item.expiryDate ? getDaysUntilExpiry(item.expiryDate) : null;
                         let statusClass = "text-gray-800";
                         let statusText = "";
@@ -213,6 +223,13 @@ export default function ItemList({
                         onUpdateItem(updatedItem);
                         setEditTarget(null);
                     }}
+                />
+            )}
+
+            {isImportModalOpen && (
+                <ImportItemsModal
+                    onClose={() => setIsImportModalOpen(false)}
+                    onSuccess={handleImportSuccess}
                 />
             )}
         </div>
