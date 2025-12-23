@@ -28,6 +28,7 @@ export default function ItemList({
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [editTarget, setEditTarget] = useState<(Item & { bag: Bag | null }) | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+    const [activeTab, setActiveTab] = useState<string>("ALL");
 
     const getDaysUntilExpiry = (expiryDate: string) => {
         const today = new Date();
@@ -66,10 +67,12 @@ export default function ItemList({
         onAddItem(newItem);
     };
 
-    const handleImportSuccess = (importedItems: (Item & { bag: Bag | null })[]) => {
-        importedItems.forEach((item) => onAddItem(item));
-        setIsImportModalOpen(false);
-    };
+    // タブによるフィルタリング
+    const filteredItems = items.filter((item) => {
+        if (activeTab === "ALL") return true;
+        if (activeTab === "UNASSIGNED") return !item.bagId;
+        return item.bagId === activeTab;
+    });
 
     return (
         <div>
@@ -93,11 +96,53 @@ export default function ItemList({
                 </div>
             </div>
 
-            {items.length === 0 ? (
+            {/* タブメニュー */}
+            <div className="mb-4 overflow-x-auto">
+                <div className="flex space-x-2 pb-2">
+                    <button
+                        onClick={() => setActiveTab("ALL")}
+                        className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${activeTab === "ALL"
+                                ? "bg-blue-500 text-white"
+                                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                            }`}
+                    >
+                        すべて
+                    </button>
+                    {bags.map((bag) => (
+                        <button
+                            key={bag.id}
+                            onClick={() => setActiveTab(bag.id)}
+                            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${activeTab === bag.id
+                                    ? "bg-blue-500 text-white"
+                                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                                }`}
+                        >
+                            {bag.name}
+                        </button>
+                    ))}
+                    <button
+                        onClick={() => setActiveTab("UNASSIGNED")}
+                        className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${activeTab === "UNASSIGNED"
+                                ? "bg-blue-500 text-white"
+                                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                            }`}
+                    >
+                        未指定
+                    </button>
+                </div>
+            </div>
+
+            {filteredItems.length === 0 ? (
                 <div className="text-center py-12 text-gray-700">
                     <p className="text-4xl mb-4">📦</p>
-                    <p>備蓄品がありません</p>
-                    <p className="text-sm">「+ 追加」ボタンで備蓄品を登録しましょう</p>
+                    <p>
+                        {activeTab === "ALL"
+                            ? "備蓄品がありません"
+                            : "この袋には備蓄品がありません"}
+                    </p>
+                    {activeTab === "ALL" && (
+                        <p className="text-sm">「+ 追加」ボタンで備蓄品を登録しましょう</p>
+                    )}
                 </div>
             ) : (
                 <ul className="space-y-3">
