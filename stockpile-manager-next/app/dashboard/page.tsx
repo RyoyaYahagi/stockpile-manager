@@ -128,7 +128,7 @@ export default function Dashboard() {
                         className="text-sm px-3 py-1 rounded border flex items-center gap-1 bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
                     >
                         <span>👨‍👩‍👧‍👦</span>
-                        家族に招待
+                        家族を招待
                     </button>
                     <button
                         onClick={() => setIsLineModalOpen(true)}

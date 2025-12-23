@@ -1,8 +1,212 @@
 [
   {
-    "name": "カップラーメン",
-    "quantity": 5,
-    "expiryDate": "2025-12-31",
-    "bagName": "非常持ち出し袋"
+    "name": "水無しシャンプー",
+    "quantity": 1,
+    "expiryDate": null,
+    "bagName": "ノースフェイス黒リュック"
+  },
+  {
+    "name": "スマホ充電用バッテリー",
+    "quantity": 1,
+    "expiryDate": null,
+    "bagName": "ノースフェイス黒リュック"
+  },
+  {
+    "name": "水電池 単3(3本入)",
+    "quantity": 2,
+    "expiryDate": null,
+    "bagName": "ノースフェイス黒リュック"
+  },
+  {
+    "name": "ソーイングセット",
+    "quantity": 1,
+    "expiryDate": null,
+    "bagName": "ノースフェイス黒リュック"
+  },
+  {
+    "name": "アルコール除菌ジェル",
+    "quantity": 1,
+    "expiryDate": null,
+    "bagName": "ノースフェイス黒リュック"
+  },
+  {
+    "name": "現金、テレカ",
+    "quantity": 1,
+    "expiryDate": null,
+    "bagName": "ノースフェイス黒リュック"
+  },
+  {
+    "name": "ホイッスル",
+    "quantity": 1,
+    "expiryDate": null,
+    "bagName": "ノースフェイス黒リュック"
+  },
+  {
+    "name": "エチケット袋",
+    "quantity": 1,
+    "expiryDate": null,
+    "bagName": "ノースフェイス黒リュック"
+  },
+  {
+    "name": "マスク小",
+    "quantity": 1,
+    "expiryDate": null,
+    "bagName": "ノースフェイス黒リュック"
+  },
+  {
+    "name": "ビニール袋",
+    "quantity": 1,
+    "expiryDate": null,
+    "bagName": "ノースフェイス黒リュック"
+  },
+  {
+    "name": "スリッパ",
+    "quantity": 1,
+    "expiryDate": null,
+    "bagName": "ノースフェイス黒リュック"
+  },
+  {
+    "name": "水タンク10リットル",
+    "quantity": 1,
+    "expiryDate": null,
+    "bagName": "ノースフェイス黒リュック"
+  },
+  {
+    "name": "折り畳み傘",
+    "quantity": 1,
+    "expiryDate": null,
+    "bagName": "ノースフェイス黒リュック"
+  },
+  {
+    "name": "歯ブラシ",
+    "quantity": 1,
+    "expiryDate": null,
+    "bagName": "ノースフェイス黒リュック"
+  },
+  {
+    "name": "マスク大",
+    "quantity": 10,
+    "expiryDate": null,
+    "bagName": "ノースフェイス黒リュック"
+  },
+  {
+    "name": "ビニール袋",
+    "quantity": 1,
+    "expiryDate": null,
+    "bagName": "ノースフェイス黒リュック"
+  },
+  {
+    "name": "肌着靴下(季子)",
+    "quantity": 1,
+    "expiryDate": null,
+    "bagName": "ノースフェイス黒リュック"
+  },
+  {
+    "name": "タンポン",
+    "quantity": 1,
+    "expiryDate": null,
+    "bagName": "ノースフェイス黒リュック"
+  },
+  {
+    "name": "ハンカチ",
+    "quantity": 1,
+    "expiryDate": null,
+    "bagName": "ノースフェイス黒リュック"
+  },
+  {
+    "name": "タオル",
+    "quantity": 1,
+    "expiryDate": null,
+    "bagName": "ノースフェイス黒リュック"
+  },
+  {
+    "name": "ティッシュ、ハンカチ",
+    "quantity": 1,
+    "expiryDate": null,
+    "bagName": "ノースフェイス黒リュック"
+  },
+  {
+    "name": "母位牌",
+    "quantity": 1,
+    "expiryDate": null,
+    "bagName": "ノースフェイス黒リュック"
+  },
+  {
+    "name": "昔のメガネ(季子)",
+    "quantity": 1,
+    "expiryDate": null,
+    "bagName": "ノースフェイス黒リュック"
+  },
+  {
+    "name": "お財布、住所録など",
+    "quantity": 1,
+    "expiryDate": null,
+    "bagName": "ノースフェイス黒リュック"
+  },
+  {
+    "name": "ママの肌着類",
+    "quantity": 1,
+    "expiryDate": null,
+    "bagName": "ノースフェイス黒リュック"
+  },
+  {
+    "name": "モバイルバッテリー マイクロUSB",
+    "quantity": 1,
+    "expiryDate": null,
+    "bagName": "ノースフェイス黒リュック"
+  },
+  {
+    "name": "缶入りビスコ",
+    "quantity": 1,
+    "expiryDate": "2026-11-30",
+    "bagName": "ノースフェイス黒リュック"
+  },
+  {
+    "name": "携帯おにぎり",
+    "quantity": 3,
+    "expiryDate": "2029-09-30",
+    "bagName": "ノースフェイス黒リュック"
+  },
+  {
+    "name": "エチケット袋",
+    "quantity": 1,
+    "expiryDate": null,
+    "bagName": "ノースフェイス黒リュック"
+  },
+  {
+    "name": "体拭き用ウエットタオル",
+    "quantity": 1,
+    "expiryDate": null,
+    "bagName": "ノースフェイス黒リュック"
+  },
+  {
+    "name": "ウエットティッシュ",
+    "quantity": 1,
+    "expiryDate": null,
+    "bagName": "ノースフェイス黒リュック"
+  },
+  {
+    "name": "水500㍉",
+    "quantity": 2,
+    "expiryDate": "2026-10-24",
+    "bagName": "ノースフェイス黒リュック"
+  },
+  {
+    "name": "アルミ毛布",
+    "quantity": 1,
+    "expiryDate": null,
+    "bagName": "ノースフェイス黒リュック"
+  },
+  {
+    "name": "除菌シート 布マスク",
+    "quantity": 1,
+    "expiryDate": null,
+    "bagName": "ノースフェイス黒リュック"
+  },
+  {
+    "name": "チョコようかん",
+    "quantity": 1,
+    "expiryDate": "2028-10-21",
+    "bagName": "ノースフェイス黒リュック"
   }
 ]

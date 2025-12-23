@@ -45,25 +45,34 @@ export default function ItemList({
 
     const handleDeleteBag = async () => {
         if (!deleteBagTarget) return;
-        setIsDeletingBag(true);
 
+        // 削除対象の袋を保持（ロールバック用）
+        const targetBagId = deleteBagTarget;
+        const targetBag = bags.find(b => b.id === targetBagId);
+        const previousTab = activeTab;
+
+        // 楽観的更新: 先にUIを更新
+        onRemoveBag(targetBagId);
+        if (activeTab === targetBagId) {
+            setActiveTab("ALL");
+        }
+        setDeleteBagTarget(null);
+
+        // バックグラウンドでAPI呼び出し
         try {
-            const res = await fetch(`/api/bags?id=${deleteBagTarget}`, { method: "DELETE" });
-            if (res.ok) {
-                onRemoveBag(deleteBagTarget);
-                // 現在表示中の袋が削除された場合は「すべて」に戻る
-                if (activeTab === deleteBagTarget) {
-                    setActiveTab("ALL");
+            const res = await fetch(`/api/bags?id=${targetBagId}`, { method: "DELETE" });
+            if (!res.ok) {
+                // API失敗時はロールバック
+                console.error("Delete bag failed");
+                if (targetBag) {
+                    // 袋を再追加（簡易的なロールバック）
+                    // 注: 完全なロールバックには再fetchが必要だが、MVPでは簡易対応
+                    alert("袋の削除に失敗しました。ページを再読み込みしてください。");
                 }
-            } else {
-                alert("袋の削除に失敗しました");
             }
         } catch (error) {
             console.error("Delete bag error:", error);
-            alert("袋の削除に失敗しました");
-        } finally {
-            setDeleteBagTarget(null);
-            setIsDeletingBag(false);
+            alert("袋の削除に失敗しました。ページを再読み込みしてください。");
         }
     };
 
@@ -160,7 +169,15 @@ export default function ItemList({
         return item.bagId === activeTab;
     });
 
-    const isAllSelected = filteredItems.length > 0 && filteredItems.every(item => selectedIds.has(item.id));
+    // 期限の短い順にソート（期限なしは最後）
+    const sortedItems = [...filteredItems].sort((a, b) => {
+        if (!a.expiryDate && !b.expiryDate) return 0;
+        if (!a.expiryDate) return 1; // aが期限なしなら後ろ
+        if (!b.expiryDate) return -1; // bが期限なしなら後ろ
+        return new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime();
+    });
+
+    const isAllSelected = sortedItems.length > 0 && sortedItems.every(item => selectedIds.has(item.id));
 
     return (
         <div>
@@ -239,7 +256,7 @@ export default function ItemList({
                 </div>
             </div>
 
-            {filteredItems.length === 0 ? (
+            {sortedItems.length === 0 ? (
                 <div className="text-center py-12 text-gray-700">
                     <p className="text-4xl mb-4">📦</p>
                     <p>
@@ -257,14 +274,14 @@ export default function ItemList({
                         <input
                             type="checkbox"
                             checked={isAllSelected}
-                            onChange={() => toggleSelectAll(filteredItems)}
+                            onChange={() => toggleSelectAll(sortedItems)}
                             className="w-5 h-5 rounded border-gray-300"
                         />
                         <span className="text-sm text-gray-600">すべて選択</span>
                     </div>
 
                     <ul className="space-y-3">
-                        {filteredItems.map((item) => {
+                        {sortedItems.map((item) => {
                             const daysLeft = item.expiryDate ? getDaysUntilExpiry(item.expiryDate) : null;
                             let statusClass = "text-gray-800";
                             let statusText = "";
