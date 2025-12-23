@@ -92,6 +92,16 @@ export default function Dashboard() {
         setBags((prev) => [...prev, newBag].sort((a, b) => a.name.localeCompare(b.name)));
     };
 
+    const handleRemoveBag = (bagId: string) => {
+        setBags((prev) => prev.filter((bag) => bag.id !== bagId));
+        // 削除された袋に紐づくアイテムのbag情報をnullに更新
+        setItems((prev) =>
+            prev.map((item) =>
+                item.bagId === bagId ? { ...item, bagId: null, bag: null } : item
+            )
+        );
+    };
+
     if ((!SKIP_AUTH && !user) || isLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
@@ -138,6 +148,7 @@ export default function Dashboard() {
                         onRemoveItem={handleRemoveItem}
                         onUpdateItem={handleUpdateItem}
                         onAddBag={handleAddBag}
+                        onRemoveBag={handleRemoveBag}
                     />
                 )}
 
