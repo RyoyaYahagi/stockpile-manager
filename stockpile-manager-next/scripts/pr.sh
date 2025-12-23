@@ -105,6 +105,9 @@ if [ "$DRAFT" = true ]; then
     PR_ARGS+=(--draft)
 fi
 
+# ベースブランチを指定
+PR_ARGS+=(--base "$BASE_BRANCH")
+
 gh pr create "${PR_ARGS[@]}"
 
 # 自動マージ（オプション指定時のみ）
