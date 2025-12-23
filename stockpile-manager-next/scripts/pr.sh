@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# PRを自動で作成してマージするスクリプト
+# PR作成スクリプト（マージなし版）
 # 使い方: ./scripts/pr.sh [オプション]
 # オプション:
-#   -m, --merge    PRを作成後に自動マージ
+#   -m, --merge    PRを作成後に自動マージ（非推奨）
 #   -d, --draft    ドラフトPRとして作成
 
 set -e
@@ -23,14 +23,14 @@ done
 # 現在のブランチを取得
 BRANCH=$(git branch --show-current)
 
-if [ "$BRANCH" = "main" ]; then
-    echo "Error: mainブランチからはPRを作成できません"
+if [ "$BRANCH" = "main" ] || [ "$BRANCH" = "master" ]; then
+    echo "Error: main/masterブランチからはPRを作成できません"
     exit 1
 fi
 
 # コミットメッセージからPR情報を生成
-COMMITS=$(git log main..$BRANCH --pretty=format:"- %s" --reverse 2>/dev/null || git log -5 --pretty=format:"- %s" --reverse)
-FIRST_COMMIT=$(git log main..$BRANCH --pretty=format:"%s" --reverse 2>/dev/null | head -1 || git log -1 --pretty=format:"%s")
+COMMITS=$(git log main..$BRANCH --pretty=format:"- %s" --reverse 2>/dev/null || git log origin/main..$BRANCH --pretty=format:"- %s" --reverse 2>/dev/null || git log -10 --pretty=format:"- %s" --reverse)
+FIRST_COMMIT=$(git log main..$BRANCH --pretty=format:"%s" --reverse 2>/dev/null | head -1 || git log origin/main..$BRANCH --pretty=format:"%s" --reverse 2>/dev/null | head -1 || git log -1 --pretty=format:"%s")
 
 # コミットプレフィックスからラベルを決定
 LABELS=""
@@ -46,16 +46,33 @@ elif echo "$FIRST_COMMIT" | grep -q "^test"; then
     LABELS="test"
 elif echo "$FIRST_COMMIT" | grep -q "^chore"; then
     LABELS="chore"
+elif echo "$FIRST_COMMIT" | grep -q "^hotfix"; then
+    LABELS="bug,urgent"
 fi
 
-# PR本文を生成
-BODY="## 変更内容
+# 差分統計を取得
+DIFF_STAT=$(git diff origin/main --stat 2>/dev/null | tail -1 || echo "変更統計取得不可")
 
+# PR本文を生成（テンプレート準拠）
+BODY="## 概要
+$FIRST_COMMIT
+
+## 変更内容
 $COMMITS
 
-## テスト方法
+## 差分ハイライト
+\`\`\`
+$DIFF_STAT
+\`\`\`
+
+## 動作確認手順
 - [ ] ローカルで動作確認済み
 - [ ] 本番環境で確認済み
+
+## チェックリスト
+- [ ] テスト/ビルドが通っている
+- [ ] 変更が1つの目的にまとまっている
+- [ ] セキュリティに影響する変更はない
 "
 
 # PRタイトル（最初のコミットメッセージ）
@@ -63,6 +80,9 @@ TITLE="$FIRST_COMMIT"
 
 # PRを作成
 echo "Creating PR: $TITLE"
+echo "---"
+echo "Labels: $LABELS"
+echo "---"
 
 PR_ARGS=(--title "$TITLE" --body "$BODY")
 
@@ -76,10 +96,17 @@ fi
 
 gh pr create "${PR_ARGS[@]}"
 
-# 自動マージ
+# 自動マージ（オプション指定時のみ）
 if [ "$AUTO_MERGE" = true ]; then
+    echo ""
+    echo "⚠️  警告: 自動マージが有効です。ポリシーではPR確認後のマージを推奨しています。"
     echo "Auto-merging..."
     gh pr merge --squash --auto
 fi
 
+echo ""
 echo "Done!"
+echo ""
+echo "📋 次の推奨アクション:"
+echo "  1. PRの内容を確認: gh pr view --web"
+echo "  2. マージ: gh pr merge --squash"
