@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { Item, Bag } from "@/lib/db/schema";
 import AddItemModal from "./AddItemModal";
+import EditItemModal from "./EditItemModal";
 import ConfirmModal from "./ConfirmModal";
 
 interface ItemListProps {
@@ -11,6 +12,7 @@ interface ItemListProps {
     familyId: string;
     onAddItem: (item: Item & { bag: Bag | null }) => void;
     onRemoveItem: (id: string) => void;
+    onUpdateItem: (updatedItem: Item & { bag: Bag | null }) => void;
 }
 
 export default function ItemList({
@@ -19,8 +21,10 @@ export default function ItemList({
     familyId,
     onAddItem,
     onRemoveItem,
+    onUpdateItem,
 }: ItemListProps) {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [editTarget, setEditTarget] = useState<(Item & { bag: Bag | null }) | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
     const getDaysUntilExpiry = (expiryDate: string) => {
@@ -98,7 +102,8 @@ export default function ItemList({
                         return (
                             <li
                                 key={item.id}
-                                className="bg-white rounded-lg shadow p-4 flex justify-between items-center"
+                                onClick={() => setEditTarget(item)}
+                                className="bg-white rounded-lg shadow p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-colors"
                             >
                                 <div>
                                     <h3 className="font-medium text-gray-800">
@@ -116,7 +121,10 @@ export default function ItemList({
                                     </p>
                                 </div>
                                 <button
-                                    onClick={() => setDeleteTarget(item.id)}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setDeleteTarget(item.id);
+                                    }}
                                     className="text-red-500 hover:text-red-700 px-3 py-1"
                                 >
                                     削除
@@ -141,6 +149,18 @@ export default function ItemList({
                     message="この備蓄品を削除しますか？"
                     onConfirm={handleDelete}
                     onCancel={() => setDeleteTarget(null)}
+                />
+            )}
+
+            {editTarget && (
+                <EditItemModal
+                    item={editTarget}
+                    bags={bags}
+                    onClose={() => setEditTarget(null)}
+                    onSuccess={(updatedItem) => {
+                        onUpdateItem(updatedItem);
+                        setEditTarget(null);
+                    }}
                 />
             )}
         </div>

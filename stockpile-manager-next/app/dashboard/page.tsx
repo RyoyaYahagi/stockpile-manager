@@ -72,6 +72,16 @@ export default function Dashboard() {
         setItems((prev) => prev.filter((item) => item.id !== id));
     };
 
+    const handleUpdateItem = (updatedItem: Item & { bag: Bag | null }) => {
+        setItems((prev) =>
+            prev.map((item) =>
+                item.id === updatedItem.id ? updatedItem : item
+            ).sort((a, b) =>
+                new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime()
+            )
+        );
+    };
+
     if (!user || isLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
@@ -104,6 +114,7 @@ export default function Dashboard() {
                         familyId={familyId}
                         onAddItem={handleAddItem}
                         onRemoveItem={handleRemoveItem}
+                        onUpdateItem={handleUpdateItem}
                     />
                 )}
 
