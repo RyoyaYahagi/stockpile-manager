@@ -232,7 +232,7 @@ export default function AddItemModal({
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-medium text-gray-900 mb-1">
                             品名
                         </label>
                         <input
@@ -246,7 +246,7 @@ export default function AddItemModal({
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-medium text-gray-900 mb-1">
                             数量
                         </label>
                         <input
@@ -260,7 +260,7 @@ export default function AddItemModal({
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-medium text-gray-900 mb-1">
                             賞味期限
                         </label>
                         <div className="flex gap-2">
@@ -334,7 +334,7 @@ export default function AddItemModal({
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-medium text-gray-900 mb-1">
                             袋（任意）
                         </label>
                         <div className="flex gap-2">
@@ -379,7 +379,7 @@ export default function AddItemModal({
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-medium text-gray-900 mb-1">
                             場所メモ（任意）
                         </label>
                         <input
