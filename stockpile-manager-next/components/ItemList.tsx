@@ -67,6 +67,11 @@ export default function ItemList({
         onAddItem(newItem);
     };
 
+    const handleImportSuccess = (newItems: (Item & { bag: Bag | null })[]) => {
+        newItems.forEach((item) => onAddItem(item));
+        setIsImportModalOpen(false);
+    };
+
     // タブによるフィルタリング
     const filteredItems = items.filter((item) => {
         if (activeTab === "ALL") return true;
@@ -102,8 +107,8 @@ export default function ItemList({
                     <button
                         onClick={() => setActiveTab("ALL")}
                         className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${activeTab === "ALL"
-                                ? "bg-blue-500 text-white"
-                                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                            ? "bg-blue-500 text-white"
+                            : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                             }`}
                     >
                         すべて
@@ -113,8 +118,8 @@ export default function ItemList({
                             key={bag.id}
                             onClick={() => setActiveTab(bag.id)}
                             className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${activeTab === bag.id
-                                    ? "bg-blue-500 text-white"
-                                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                                ? "bg-blue-500 text-white"
+                                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                                 }`}
                         >
                             {bag.name}
@@ -123,8 +128,8 @@ export default function ItemList({
                     <button
                         onClick={() => setActiveTab("UNASSIGNED")}
                         className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${activeTab === "UNASSIGNED"
-                                ? "bg-blue-500 text-white"
-                                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                            ? "bg-blue-500 text-white"
+                            : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                             }`}
                     >
                         未指定
