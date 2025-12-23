@@ -69,20 +69,6 @@ export async function POST(request: NextRequest) {
         console.error('[API] POST items error:', error);
         return NextResponse.json({ error: "Internal Server Error", details: String(error) }, { status: 500 });
     }
-
-    const body = await request.json();
-    const { name, quantity, expiryDate, bagId, locationNote } = body;
-
-    const [newItem] = await db.insert(items).values({
-        familyId: dbUser.familyId,
-        name,
-        quantity: quantity || 1,
-        expiryDate: expiryDate || null,
-        bagId: bagId || null,
-        locationNote: locationNote || null,
-    }).returning();
-
-    return NextResponse.json(newItem);
 }
 
 export async function DELETE(request: NextRequest) {
