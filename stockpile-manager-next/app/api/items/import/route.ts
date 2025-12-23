@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 interface ImportItem {
     name: string;
     quantity?: number;
-    expiryDate: string;
+    expiryDate?: string | null;
     bagName?: string;
     locationNote?: string;
 }
@@ -33,15 +33,13 @@ function validateImportItems(data: unknown): { valid: boolean; items?: ImportIte
             return { valid: false, error: `アイテム${i + 1}: 品名（name）は必須です` };
         }
 
-        // expiryDateの検証
-        if (!item.expiryDate || typeof item.expiryDate !== "string") {
-            return { valid: false, error: `アイテム${i + 1}: 賞味期限（expiryDate）は必須です` };
-        }
-
-        // 日付形式の検証 (YYYY-MM-DD)
-        const dateMatch = item.expiryDate.match(/^\d{4}-\d{2}-\d{2}$/);
-        if (!dateMatch || isNaN(Date.parse(item.expiryDate))) {
-            return { valid: false, error: `アイテム${i + 1}: 賞味期限はYYYY-MM-DD形式で指定してください` };
+        // expiryDateの検証 (任意)
+        if (item.expiryDate && typeof item.expiryDate === "string") {
+            // 日付形式の検証 (YYYY-MM-DD)
+            const dateMatch = item.expiryDate.match(/^\d{4}-\d{2}-\d{2}$/);
+            if (!dateMatch || isNaN(Date.parse(item.expiryDate))) {
+                return { valid: false, error: `アイテム${i + 1}: 賞味期限はYYYY-MM-DD形式で指定してください` };
+            }
         }
 
         // quantityの検証（オプション）
@@ -56,7 +54,7 @@ function validateImportItems(data: unknown): { valid: boolean; items?: ImportIte
         validatedItems.push({
             name: item.name.trim(),
             quantity,
-            expiryDate: item.expiryDate,
+            expiryDate: item.expiryDate || null,
             bagName: item.bagName?.trim() || undefined,
             locationNote: item.locationNote?.trim() || undefined,
         });
@@ -130,7 +128,7 @@ export async function POST(request: NextRequest) {
         familyId,
         name: item.name,
         quantity: item.quantity || 1,
-        expiryDate: item.expiryDate,
+        expiryDate: item.expiryDate || null,
         bagId: item.bagName ? bagNameToId.get(item.bagName) || null : null,
         locationNote: item.locationNote || null,
     }));
