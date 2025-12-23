@@ -27,33 +27,58 @@ export async function GET() {
     return NextResponse.json(result);
 }
 
+const MOCK_USER = {
+    id: 'test-user-id',
+    familyId: 'test-family-id',
+};
+
 export async function POST(request: NextRequest) {
-    const user = await stackServerApp.getUser();
-    if (!user) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    try {
+        let userId = MOCK_USER.id;
+        let familyId = MOCK_USER.familyId;
+
+        // 認証スキップが無効な場合はStack Authを使用
+        if (process.env.NEXT_PUBLIC_SKIP_AUTH !== 'true') {
+            const user = await stackServerApp.getUser();
+            if (!user) {
+                return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+            }
+            userId = user.id;
+
+            const dbUser = await db.query.users.findFirst({
+                where: eq(users.id, userId),
+            });
+
+            if (!dbUser?.familyId) {
+                return NextResponse.json({ error: "No family" }, { status: 400 });
+            }
+            familyId = dbUser.familyId;
+        }
+
+        const body = await request.json();
+        console.log('[API] POST items body:', body); // デバッグログ
+
+        const { name, quantity, expiryDate, bagId, locationNote } = body;
+
+        // バリデーション
+        if (!name) {
+            return NextResponse.json({ error: "Name is required" }, { status: 400 });
+        }
+
+        const [newItem] = await db.insert(items).values({
+            familyId: familyId,
+            name,
+            quantity: quantity || 1,
+            expiryDate: expiryDate || null, // 空文字対応
+            bagId: bagId || null,
+            locationNote: locationNote || null,
+        }).returning();
+
+        return NextResponse.json(newItem);
+    } catch (error) {
+        console.error('[API] POST items error:', error);
+        return NextResponse.json({ error: "Internal Server Error", details: String(error) }, { status: 500 });
     }
-
-    const dbUser = await db.query.users.findFirst({
-        where: eq(users.id, user.id),
-    });
-
-    if (!dbUser?.familyId) {
-        return NextResponse.json({ error: "No family" }, { status: 400 });
-    }
-
-    const body = await request.json();
-    const { name, quantity, expiryDate, bagId, locationNote } = body;
-
-    const [newItem] = await db.insert(items).values({
-        familyId: dbUser.familyId,
-        name,
-        quantity: quantity || 1,
-        expiryDate: expiryDate || null,
-        bagId: bagId || null,
-        locationNote: locationNote || null,
-    }).returning();
-
-    return NextResponse.json(newItem);
 }
 
 export async function DELETE(request: NextRequest) {
