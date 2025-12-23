@@ -6,6 +6,7 @@ import { useEffect, useState, useCallback } from "react";
 import ItemList from "@/components/ItemList";
 import Header from "@/components/Header";
 import LineSettingsModal from "@/components/LineSettingsModal";
+import FamilyInviteModal from "@/components/FamilyInviteModal";
 import type { Item, Bag } from "@/lib/db/schema";
 
 export default function Dashboard() {
@@ -19,6 +20,7 @@ export default function Dashboard() {
     // LINE設定追加
     const [lineUserId, setLineUserId] = useState<string | null>(null);
     const [isLineModalOpen, setIsLineModalOpen] = useState(false);
+    const [isFamilyInviteModalOpen, setIsFamilyInviteModalOpen] = useState(false);
 
     const fetchData = useCallback(async () => {
         try {
@@ -97,7 +99,14 @@ export default function Dashboard() {
                 familyName={familyName}
             />
             <main className="max-w-2xl mx-auto px-4 py-6">
-                <div className="flex justify-end mb-4">
+                <div className="flex justify-end gap-2 mb-4">
+                    <button
+                        onClick={() => setIsFamilyInviteModalOpen(true)}
+                        className="text-sm px-3 py-1 rounded border flex items-center gap-1 bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+                    >
+                        <span>👨‍👩‍👧‍👦</span>
+                        家族に招待
+                    </button>
                     <button
                         onClick={() => setIsLineModalOpen(true)}
                         className={`text-sm px-3 py-1 rounded border flex items-center gap-1 ${lineUserId ? "bg-green-50 text-green-700 border-green-200" : "bg-gray-50 text-gray-500 border-gray-200"}`}
@@ -123,6 +132,12 @@ export default function Dashboard() {
                         currentLineUserId={lineUserId}
                         onClose={() => setIsLineModalOpen(false)}
                         onSave={(id) => setLineUserId(id)}
+                    />
+                )}
+
+                {isFamilyInviteModalOpen && (
+                    <FamilyInviteModal
+                        onClose={() => setIsFamilyInviteModalOpen(false)}
                     />
                 )}
             </main>

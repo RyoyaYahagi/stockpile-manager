@@ -4,6 +4,48 @@ import { families, users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
+// 家族情報を取得（招待コード、メンバー一覧）
+export async function GET() {
+    const user = await stackServerApp.getUser();
+    if (!user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // ユーザーの家族IDを取得
+    const dbUser = await db.query.users.findFirst({
+        where: eq(users.id, user.id),
+    });
+
+    if (!dbUser?.familyId) {
+        return NextResponse.json({ error: "Family not found" }, { status: 404 });
+    }
+
+    // 家族情報を取得
+    const family = await db.query.families.findFirst({
+        where: eq(families.id, dbUser.familyId),
+    });
+
+    if (!family) {
+        return NextResponse.json({ error: "Family not found" }, { status: 404 });
+    }
+
+    // 家族メンバー一覧を取得
+    const members = await db.query.users.findMany({
+        where: eq(users.familyId, dbUser.familyId),
+    });
+
+    return NextResponse.json({
+        inviteCode: family.inviteCode,
+        familyName: family.name,
+        members: members.map(m => ({
+            id: m.id,
+            displayName: m.displayName || m.email || "名前未設定",
+            email: m.email,
+        })),
+    });
+}
+
+
 // 家族を作成
 export async function POST(request: NextRequest) {
     const user = await stackServerApp.getUser();
