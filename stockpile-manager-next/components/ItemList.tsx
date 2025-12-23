@@ -14,6 +14,8 @@ interface ItemListProps {
     onAddItem: (item: Item & { bag: Bag | null }) => void;
     onRemoveItem: (id: string) => void;
     onUpdateItem: (updatedItem: Item & { bag: Bag | null }) => void;
+    onAddBag: (bag: Bag) => void;
+    onRemoveBag: (bagId: string) => void;
 }
 
 export default function ItemList({
@@ -23,11 +25,56 @@ export default function ItemList({
     onAddItem,
     onRemoveItem,
     onUpdateItem,
+    onAddBag,
+    onRemoveBag,
 }: ItemListProps) {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [editTarget, setEditTarget] = useState<(Item & { bag: Bag | null }) | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+    const [activeTab, setActiveTab] = useState<string>("ALL");
+
+    // 一括削除用
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [isBulkDeleteConfirmOpen, setIsBulkDeleteConfirmOpen] = useState(false);
+    const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+
+    // 袋削除用
+    const [deleteBagTarget, setDeleteBagTarget] = useState<string | null>(null);
+    const [isDeletingBag, setIsDeletingBag] = useState(false);
+
+    const handleDeleteBag = async () => {
+        if (!deleteBagTarget) return;
+
+        // 削除対象の袋を保持（ロールバック用）
+        const targetBagId = deleteBagTarget;
+        const targetBag = bags.find(b => b.id === targetBagId);
+        const previousTab = activeTab;
+
+        // 楽観的更新: 先にUIを更新
+        onRemoveBag(targetBagId);
+        if (activeTab === targetBagId) {
+            setActiveTab("ALL");
+        }
+        setDeleteBagTarget(null);
+
+        // バックグラウンドでAPI呼び出し
+        try {
+            const res = await fetch(`/api/bags?id=${targetBagId}`, { method: "DELETE" });
+            if (!res.ok) {
+                // API失敗時はロールバック
+                console.error("Delete bag failed");
+                if (targetBag) {
+                    // 袋を再追加（簡易的なロールバック）
+                    // 注: 完全なロールバックには再fetchが必要だが、MVPでは簡易対応
+                    alert("袋の削除に失敗しました。ページを再読み込みしてください。");
+                }
+            }
+        } catch (error) {
+            console.error("Delete bag error:", error);
+            alert("袋の削除に失敗しました。ページを再読み込みしてください。");
+        }
+    };
 
     const getDaysUntilExpiry = (expiryDate: string) => {
         const today = new Date();
@@ -54,10 +101,54 @@ export default function ItemList({
             const res = await fetch(`/api/items?id=${deleteTarget}`, { method: "DELETE" });
             if (!res.ok) {
                 console.error('Delete failed');
-                // エラー時のロールバック処理はMVPでは省略（必要なら再fetch）
             }
         } catch (error) {
             console.error('Delete error', error);
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        setIsBulkDeleting(true);
+        const idsToDelete = Array.from(selectedIds);
+
+        // UIから削除（楽観的更新）
+        idsToDelete.forEach(id => onRemoveItem(id));
+        setSelectedIds(new Set());
+        setIsBulkDeleteConfirmOpen(false);
+
+        // APIで削除
+        try {
+            await Promise.all(idsToDelete.map(id => fetch(`/api/items?id=${id}`, { method: "DELETE" })));
+        } catch (error) {
+            console.error('Bulk delete error', error);
+            alert('一部の削除に失敗した可能性があります');
+        } finally {
+            setIsBulkDeleting(false);
+        }
+    };
+
+    const toggleSelect = (id: string) => {
+        const newSelected = new Set(selectedIds);
+        if (newSelected.has(id)) {
+            newSelected.delete(id);
+        } else {
+            newSelected.add(id);
+        }
+        setSelectedIds(newSelected);
+    };
+
+    const toggleSelectAll = (filteredItems: (Item & { bag: Bag | null })[]) => {
+        const allSelected = filteredItems.every(item => selectedIds.has(item.id));
+        if (allSelected) {
+            // 現在のフィルター内のアイテムを選択解除
+            const newSelected = new Set(selectedIds);
+            filteredItems.forEach(item => newSelected.delete(item.id));
+            setSelectedIds(newSelected);
+        } else {
+            // 現在のフィルター内のアイテムを全選択
+            const newSelected = new Set(selectedIds);
+            filteredItems.forEach(item => newSelected.add(item.id));
+            setSelectedIds(newSelected);
         }
     };
 
@@ -66,10 +157,27 @@ export default function ItemList({
         onAddItem(newItem);
     };
 
-    const handleImportSuccess = (importedItems: (Item & { bag: Bag | null })[]) => {
-        importedItems.forEach((item) => onAddItem(item));
+    const handleImportSuccess = (newItems: (Item & { bag: Bag | null })[]) => {
+        newItems.forEach((item) => onAddItem(item));
         setIsImportModalOpen(false);
     };
+
+    // タブによるフィルタリング
+    const filteredItems = items.filter((item) => {
+        if (activeTab === "ALL") return true;
+        if (activeTab === "UNASSIGNED") return !item.bagId;
+        return item.bagId === activeTab;
+    });
+
+    // 期限の短い順にソート（期限なしは最後）
+    const sortedItems = [...filteredItems].sort((a, b) => {
+        if (!a.expiryDate && !b.expiryDate) return 0;
+        if (!a.expiryDate) return 1; // aが期限なしなら後ろ
+        if (!b.expiryDate) return -1; // bが期限なしなら後ろ
+        return new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime();
+    });
+
+    const isAllSelected = sortedItems.length > 0 && sortedItems.every(item => selectedIds.has(item.id));
 
     return (
         <div>
@@ -78,6 +186,14 @@ export default function ItemList({
                     備蓄品一覧 ({items.length}件)
                 </h2>
                 <div className="flex gap-2">
+                    {selectedIds.size > 0 && (
+                        <button
+                            onClick={() => setIsBulkDeleteConfirmOpen(true)}
+                            className="bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition-colors text-sm"
+                        >
+                            {selectedIds.size}件を削除
+                        </button>
+                    )}
                     <button
                         onClick={() => setIsImportModalOpen(true)}
                         className="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm"
@@ -93,63 +209,143 @@ export default function ItemList({
                 </div>
             </div>
 
-            {items.length === 0 ? (
+            {/* タブメニュー */}
+            <div className="mb-4 overflow-x-auto">
+                <div className="flex space-x-2 pb-2">
+                    <button
+                        onClick={() => setActiveTab("ALL")}
+                        className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${activeTab === "ALL"
+                            ? "bg-blue-500 text-white"
+                            : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                            }`}
+                    >
+                        すべて
+                    </button>
+                    {bags.map((bag) => (
+                        <div key={bag.id} className="relative group flex items-center">
+                            <button
+                                onClick={() => setActiveTab(bag.id)}
+                                className={`px-4 py-2 pr-8 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${activeTab === bag.id
+                                    ? "bg-blue-500 text-white"
+                                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                                    }`}
+                            >
+                                {bag.name}
+                            </button>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setDeleteBagTarget(bag.id);
+                                }}
+                                className="absolute right-1.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-red-500 text-white text-xs hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                                title="この袋を削除"
+                            >
+                                ×
+                            </button>
+                        </div>
+                    ))}
+                    <button
+                        onClick={() => setActiveTab("UNASSIGNED")}
+                        className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${activeTab === "UNASSIGNED"
+                            ? "bg-blue-500 text-white"
+                            : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                            }`}
+                    >
+                        未指定
+                    </button>
+                </div>
+            </div>
+
+            {sortedItems.length === 0 ? (
                 <div className="text-center py-12 text-gray-700">
                     <p className="text-4xl mb-4">📦</p>
-                    <p>備蓄品がありません</p>
-                    <p className="text-sm">「+ 追加」ボタンで備蓄品を登録しましょう</p>
+                    <p>
+                        {activeTab === "ALL"
+                            ? "備蓄品がありません"
+                            : "この袋には備蓄品がありません"}
+                    </p>
+                    {activeTab === "ALL" && (
+                        <p className="text-sm">「+ 追加」ボタンで備蓄品を登録しましょう</p>
+                    )}
                 </div>
             ) : (
-                <ul className="space-y-3">
-                    {items.map((item) => {
-                        const daysLeft = item.expiryDate ? getDaysUntilExpiry(item.expiryDate) : null;
-                        let statusClass = "text-gray-800";
-                        let statusText = "";
+                <div className="space-y-3">
+                    <div className="flex items-center gap-2 px-2 mb-2">
+                        <input
+                            type="checkbox"
+                            checked={isAllSelected}
+                            onChange={() => toggleSelectAll(sortedItems)}
+                            className="w-5 h-5 rounded border-gray-300"
+                        />
+                        <span className="text-sm text-gray-600">すべて選択</span>
+                    </div>
 
-                        if (daysLeft !== null) {
-                            if (daysLeft < 0) {
-                                statusClass = "text-red-600 font-semibold";
-                                statusText = `（${Math.abs(daysLeft)}日経過）`;
-                            } else if (daysLeft <= 7) {
-                                statusClass = "text-orange-600 font-semibold";
-                                statusText = `（あと${daysLeft}日）`;
+                    <ul className="space-y-3">
+                        {sortedItems.map((item) => {
+                            const daysLeft = item.expiryDate ? getDaysUntilExpiry(item.expiryDate) : null;
+                            let statusClass = "text-gray-800";
+                            let statusText = "";
+
+                            if (daysLeft !== null) {
+                                if (daysLeft < 0) {
+                                    statusClass = "text-red-600 font-semibold";
+                                    statusText = `（${Math.abs(daysLeft)}日経過）`;
+                                } else if (daysLeft <= 7) {
+                                    statusClass = "text-orange-600 font-semibold";
+                                    statusText = `（あと${daysLeft}日）`;
+                                }
                             }
-                        }
 
-                        return (
-                            <li
-                                key={item.id}
-                                onClick={() => setEditTarget(item)}
-                                className="bg-white rounded-lg shadow p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-colors"
-                            >
-                                <div>
-                                    <h3 className="font-medium text-gray-900">
-                                        {item.name}
-                                        {item.quantity && item.quantity > 1 && (
-                                            <span className="text-gray-700"> × {item.quantity}</span>
-                                        )}
-                                    </h3>
-                                    <p className={statusClass}>
-                                        期限: {item.expiryDate ? `${formatDate(item.expiryDate)} ${statusText}` : "期限なし"}
-                                    </p>
-                                    <p className="text-sm text-gray-700">
-                                        💼 {item.bag?.name || "未指定"}
-                                        {item.locationNote && ` / ${item.locationNote}`}
-                                    </p>
-                                </div>
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setDeleteTarget(item.id);
-                                    }}
-                                    className="text-red-500 hover:text-red-700 px-3 py-1"
+                            return (
+                                <li
+                                    key={item.id}
+                                    onClick={() => setEditTarget(item)}
+                                    className={`bg-white rounded-lg shadow p-4 flex gap-3 items-center cursor-pointer hover:bg-gray-50 transition-colors ${selectedIds.has(item.id) ? "ring-2 ring-blue-500" : ""
+                                        }`}
                                 >
-                                    削除
-                                </button>
-                            </li>
-                        );
-                    })}
-                </ul>
+                                    <div
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            toggleSelect(item.id);
+                                        }}
+                                        className="flex-shrink-0"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedIds.has(item.id)}
+                                            onChange={() => { }} // 親のdivで制御
+                                            className="w-5 h-5 rounded border-gray-300"
+                                        />
+                                    </div>
+                                    <div className="flex-1">
+                                        <h3 className="font-medium text-gray-900">
+                                            {item.name}
+                                            {item.quantity && item.quantity > 1 && (
+                                                <span className="text-gray-700"> × {item.quantity}</span>
+                                            )}
+                                        </h3>
+                                        <p className={statusClass}>
+                                            期限: {item.expiryDate ? `${formatDate(item.expiryDate)} ${statusText}` : "期限なし"}
+                                        </p>
+                                        <p className="text-sm text-gray-700">
+                                            💼 {item.bag?.name || "未指定"}
+                                            {item.locationNote && ` / ${item.locationNote}`}
+                                        </p>
+                                    </div>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setDeleteTarget(item.id);
+                                        }}
+                                        className="text-red-500 hover:text-red-700 px-3 py-1"
+                                    >
+                                        削除
+                                    </button>
+                                </li>
+                            );
+                        })}
+                    </ul>
+                </div>
             )}
 
             {isAddModalOpen && (
@@ -158,6 +354,7 @@ export default function ItemList({
                     familyId={familyId}
                     onClose={() => setIsAddModalOpen(false)}
                     onSuccess={handleItemAdded}
+                    onAddBag={onAddBag}
                 />
             )}
 
@@ -166,6 +363,22 @@ export default function ItemList({
                     message="この備蓄品を削除しますか？"
                     onConfirm={handleDelete}
                     onCancel={() => setDeleteTarget(null)}
+                />
+            )}
+
+            {isBulkDeleteConfirmOpen && (
+                <ConfirmModal
+                    message={`選択した ${selectedIds.size} 件の備蓄品を削除しますか？`}
+                    onConfirm={handleBulkDelete}
+                    onCancel={() => setIsBulkDeleteConfirmOpen(false)}
+                />
+            )}
+
+            {deleteBagTarget && (
+                <ConfirmModal
+                    message={`この袋を削除しますか？袋に入っている備蓄品は「未指定」に移動します。`}
+                    onConfirm={handleDeleteBag}
+                    onCancel={() => setDeleteBagTarget(null)}
                 />
             )}
 

@@ -27,18 +27,47 @@ export async function GET() {
     return NextResponse.json(result);
 }
 
+// 認証スキップ用モック削除
+
 export async function POST(request: NextRequest) {
-    const user = await stackServerApp.getUser();
-    if (!user) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    try {
+        const user = await stackServerApp.getUser();
+        if (!user) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
 
-    const dbUser = await db.query.users.findFirst({
-        where: eq(users.id, user.id),
-    });
+        const dbUser = await db.query.users.findFirst({
+            where: eq(users.id, user.id),
+        });
 
-    if (!dbUser?.familyId) {
-        return NextResponse.json({ error: "No family" }, { status: 400 });
+        if (!dbUser?.familyId) {
+            return NextResponse.json({ error: "No family" }, { status: 400 });
+        }
+        const familyId = dbUser.familyId;
+
+        const body = await request.json();
+        console.log('[API] POST items body:', body); // デバッグログ
+
+        const { name, quantity, expiryDate, bagId, locationNote } = body;
+
+        // バリデーション
+        if (!name) {
+            return NextResponse.json({ error: "Name is required" }, { status: 400 });
+        }
+
+        const [newItem] = await db.insert(items).values({
+            familyId: familyId,
+            name,
+            quantity: quantity || 1,
+            expiryDate: expiryDate || null, // 空文字対応
+            bagId: bagId || null,
+            locationNote: locationNote || null,
+        }).returning();
+
+        return NextResponse.json(newItem);
+    } catch (error) {
+        console.error('[API] POST items error:', error);
+        return NextResponse.json({ error: "Internal Server Error", details: String(error) }, { status: 500 });
     }
 
     const body = await request.json();
@@ -88,47 +117,53 @@ export async function DELETE(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
-    const user = await stackServerApp.getUser();
-    if (!user) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    try {
+        const user = await stackServerApp.getUser();
+        if (!user) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
 
-    const dbUser = await db.query.users.findFirst({
-        where: eq(users.id, user.id),
-    });
+        const dbUser = await db.query.users.findFirst({
+            where: eq(users.id, user.id),
+        });
 
-    if (!dbUser?.familyId) {
-        return NextResponse.json({ error: "No family" }, { status: 400 });
-    }
+        if (!dbUser?.familyId) {
+            return NextResponse.json({ error: "No family" }, { status: 400 });
+        }
+        const familyId = dbUser.familyId;
 
-    const body = await request.json();
-    const { id, name, quantity, expiryDate, bagId, locationNote } = body;
+        const body = await request.json();
+        const { id, name, quantity, expiryDate, bagId, locationNote } = body;
 
-    if (!id) {
-        return NextResponse.json({ error: "Missing id" }, { status: 400 });
-    }
+        if (!id) {
+            return NextResponse.json({ error: "Missing id" }, { status: 400 });
+        }
 
-    const [updatedItem] = await db.update(items)
-        .set({
-            name,
-            quantity: quantity || 1,
-            expiryDate: expiryDate || null,
-            bagId: bagId || null,
-            locationNote: locationNote || null,
-        })
-        .where(
-            and(
-                eq(items.id, id),
-                eq(items.familyId, dbUser.familyId)
+        const [updatedItem] = await db.update(items)
+            .set({
+                name,
+                quantity: quantity || 1,
+                expiryDate: expiryDate || null,
+                bagId: bagId || null,
+                locationNote: locationNote || null,
+            })
+            .where(
+                and(
+                    eq(items.id, id),
+                    eq(items.familyId, familyId)
+                )
             )
-        )
-        .returning();
+            .returning();
 
-    // bag情報も含めて返す
-    const itemWithBag = await db.query.items.findFirst({
-        where: eq(items.id, id),
-        with: { bag: true },
-    });
+        // bag情報も含めて返す
+        const itemWithBag = await db.query.items.findFirst({
+            where: eq(items.id, id),
+            with: { bag: true },
+        });
 
-    return NextResponse.json(itemWithBag);
+        return NextResponse.json(itemWithBag);
+    } catch (error) {
+        console.error('[API] PUT items error:', error);
+        return NextResponse.json({ error: "Internal Server Error", details: String(error) }, { status: 500 });
+    }
 }

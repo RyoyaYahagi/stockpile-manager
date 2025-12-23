@@ -69,7 +69,7 @@ export default function FamilyInviteModal({ onClose }: FamilyInviteModalProps) {
             <div className="bg-white rounded-2xl max-w-sm w-full shadow-xl">
                 <div className="p-6">
                     <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-xl font-bold">👨‍👩‍👧‍👦 家族に招待</h2>
+                        <h2 className="text-xl font-bold">👨‍👩‍👧‍👦 家族を招待</h2>
                         <button
                             onClick={onClose}
                             className="text-gray-400 hover:text-gray-600 text-2xl"
@@ -97,8 +97,8 @@ export default function FamilyInviteModal({ onClose }: FamilyInviteModalProps) {
                                 <button
                                     onClick={handleCopy}
                                     className={`flex-1 py-3 rounded-lg font-medium transition-colors ${copied
-                                            ? "bg-green-500 text-white"
-                                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                        ? "bg-green-500 text-white"
+                                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                                         }`}
                                 >
                                     {copied ? "✓ コピーしました" : "📋 コピー"}

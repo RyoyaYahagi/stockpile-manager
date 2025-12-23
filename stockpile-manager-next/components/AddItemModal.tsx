@@ -8,6 +8,7 @@ interface AddItemModalProps {
     familyId: string;
     onClose: () => void;
     onSuccess: (item: Item & { bag: Bag | null }) => void;
+    onAddBag: (bag: Bag) => void;
 }
 
 export default function AddItemModal({
@@ -15,6 +16,7 @@ export default function AddItemModal({
     familyId,
     onClose,
     onSuccess,
+    onAddBag,
 }: AddItemModalProps) {
     const [name, setName] = useState("");
     const [quantity, setQuantity] = useState(1);
@@ -144,11 +146,12 @@ export default function AddItemModal({
         setBagId(newBag.id);
         setNewBagName("");
         setShowNewBagInput(false);
+        onAddBag(newBag); // 親に通知
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!name.trim() || !expiryDate) return;
+        if (!name.trim()) return;
 
         setIsSubmitting(true);
 
@@ -167,6 +170,7 @@ export default function AddItemModal({
                     const newBag = await bagRes.json();
                     setLocalBags(prev => [...prev, newBag]);
                     finalBagId = newBag.id;
+                    onAddBag(newBag); // 親に通知
                 }
             }
 
@@ -176,7 +180,7 @@ export default function AddItemModal({
                 body: JSON.stringify({
                     name: name.trim(),
                     quantity,
-                    expiryDate,
+                    expiryDate: expiryDate || null,
                     bagId: finalBagId || null,
                     locationNote: locationNote.trim() || null,
                 }),
@@ -215,7 +219,7 @@ export default function AddItemModal({
             } else {
                 const data = await res.json();
                 console.error('Error:', data);
-                alert('保存に失敗しました: ' + (data.error || 'Unknown error'));
+                alert('保存に失敗しました: ' + (data.error || 'Unknown error') + (data.details ? `\n詳細: ${data.details}` : ''));
             }
         } catch (error) {
             console.error('Fetch error:', error);

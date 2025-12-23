@@ -9,8 +9,8 @@ import LineSettingsModal from "@/components/LineSettingsModal";
 import FamilyInviteModal from "@/components/FamilyInviteModal";
 import type { Item, Bag } from "@/lib/db/schema";
 
-// テスト用: NEXT_PUBLIC_SKIP_AUTH=true で認証スキップ
-const SKIP_AUTH = process.env.NEXT_PUBLIC_SKIP_AUTH === 'true';
+// テスト用設定削除
+const SKIP_AUTH = false;
 
 export default function Dashboard() {
     const user = useUser();
@@ -22,6 +22,7 @@ export default function Dashboard() {
     const [isLoading, setIsLoading] = useState(true);
     // LINE設定追加
     const [lineUserId, setLineUserId] = useState<string | null>(null);
+    const [lineGroupId, setLineGroupId] = useState<string | null>(null);
     const [isLineModalOpen, setIsLineModalOpen] = useState(false);
     const [isFamilyInviteModalOpen, setIsFamilyInviteModalOpen] = useState(false);
 
@@ -40,17 +41,23 @@ export default function Dashboard() {
             setFamilyName(userData.familyName || "家族");
             setLineUserId(userData.lineUserId);
 
-            // 備蓄品と袋を取得
-            const [itemsRes, bagsRes] = await Promise.all([
+            // 備蓄品と袋、家族情報を取得
+            const [itemsRes, bagsRes, familyRes] = await Promise.all([
                 fetch("/api/items"),
                 fetch("/api/bags"),
+                fetch("/api/family"),
             ]);
 
             const itemsData = await itemsRes.json();
             const bagsData = await bagsRes.json();
+            const familyData = await familyRes.json();
 
             setItems(itemsData);
             setBags(bagsData);
+            // 家族のlineGroupIdを取得
+            if (familyData.lineGroupId) {
+                setLineGroupId(familyData.lineGroupId);
+            }
         } catch (error) {
             console.error("Error fetching data:", error);
         } finally {
@@ -88,6 +95,20 @@ export default function Dashboard() {
         );
     };
 
+    const handleAddBag = (newBag: Bag) => {
+        setBags((prev) => [...prev, newBag].sort((a, b) => a.name.localeCompare(b.name)));
+    };
+
+    const handleRemoveBag = (bagId: string) => {
+        setBags((prev) => prev.filter((bag) => bag.id !== bagId));
+        // 削除された袋に紐づくアイテムのbag情報をnullに更新
+        setItems((prev) =>
+            prev.map((item) =>
+                item.bagId === bagId ? { ...item, bagId: null, bag: null } : item
+            )
+        );
+    };
+
     if ((!SKIP_AUTH && !user) || isLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
@@ -114,14 +135,14 @@ export default function Dashboard() {
                         className="text-sm px-3 py-1 rounded border flex items-center gap-1 bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
                     >
                         <span>👨‍👩‍👧‍👦</span>
-                        家族に招待
+                        家族を招待
                     </button>
                     <button
                         onClick={() => setIsLineModalOpen(true)}
-                        className={`text-sm px-3 py-1 rounded border flex items-center gap-1 ${lineUserId ? "bg-green-50 text-green-700 border-green-200" : "bg-gray-50 text-gray-500 border-gray-200"}`}
+                        className={`text-sm px-3 py-1 rounded border flex items-center gap-1 ${(lineUserId || lineGroupId) ? "bg-green-50 text-green-700 border-green-200" : "bg-gray-50 text-gray-500 border-gray-200"}`}
                     >
                         <span>💬</span>
-                        {lineUserId ? "LINE連携設定" : "LINE未連携"}
+                        {(lineUserId || lineGroupId) ? "LINE連携設定" : "LINE未連携"}
                     </button>
                 </div>
 
@@ -133,14 +154,26 @@ export default function Dashboard() {
                         onAddItem={handleAddItem}
                         onRemoveItem={handleRemoveItem}
                         onUpdateItem={handleUpdateItem}
+                        onAddBag={handleAddBag}
+                        onRemoveBag={handleRemoveBag}
                     />
                 )}
 
                 {isLineModalOpen && (
                     <LineSettingsModal
                         currentLineUserId={lineUserId}
+                        currentLineGroupId={lineGroupId}
                         onClose={() => setIsLineModalOpen(false)}
-                        onSave={(id) => setLineUserId(id)}
+                        onSave={(userId, groupId) => {
+                            setLineUserId(userId);
+                            setLineGroupId(groupId);
+                        }}
+                    />
+                )}
+
+                {isFamilyInviteModalOpen && (
+                    <FamilyInviteModal
+                        onClose={() => setIsFamilyInviteModalOpen(false)}
                     />
                 )}
 

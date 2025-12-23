@@ -58,21 +58,18 @@ export default function ImportItemsModal({
                         return;
                     }
 
-                    if (!item.expiryDate || typeof item.expiryDate !== "string") {
-                        setError(`アイテム${i + 1}: 賞味期限（expiryDate）は必須です`);
-                        return;
-                    }
-
-                    const dateMatch = item.expiryDate.match(/^\d{4}-\d{2}-\d{2}$/);
-                    if (!dateMatch) {
-                        setError(`アイテム${i + 1}: 賞味期限はYYYY-MM-DD形式で指定してください`);
-                        return;
+                    if (item.expiryDate && typeof item.expiryDate === "string") {
+                        const dateMatch = item.expiryDate.match(/^\d{4}-\d{2}-\d{2}$/);
+                        if (!dateMatch) {
+                            setError(`アイテム${i + 1}: 賞味期限はYYYY-MM-DD形式で指定してください`);
+                            return;
+                        }
                     }
 
                     validated.push({
                         name: item.name.trim(),
                         quantity: item.quantity || 1,
-                        expiryDate: item.expiryDate,
+                        expiryDate: item.expiryDate || null,
                         bagName: item.bagName?.trim() || undefined,
                         locationNote: item.locationNote?.trim() || undefined,
                     });
@@ -186,7 +183,7 @@ export default function ImportItemsModal({
                                             )}
                                         </div>
                                         <div className="text-gray-600">
-                                            期限: {formatDate(item.expiryDate)}
+                                            期限: {item.expiryDate ? formatDate(item.expiryDate) : "なし"}
                                             {item.bagName && ` / 💼 ${item.bagName}`}
                                             {item.locationNote && ` / ${item.locationNote}`}
                                         </div>
@@ -211,7 +208,7 @@ export default function ImportItemsModal({
 ]`}
                             </pre>
                             <p className="mt-2 text-xs">
-                                ※ quantity, bagName, locationNote はオプション
+                                ※ quantity, expiryDate, bagName, locationNote はオプション
                             </p>
                         </div>
                     )}
