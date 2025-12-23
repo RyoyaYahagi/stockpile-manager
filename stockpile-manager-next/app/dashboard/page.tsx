@@ -9,6 +9,9 @@ import LineSettingsModal from "@/components/LineSettingsModal";
 import FamilyInviteModal from "@/components/FamilyInviteModal";
 import type { Item, Bag } from "@/lib/db/schema";
 
+// テスト用: NEXT_PUBLIC_SKIP_AUTH=true で認証スキップ
+const SKIP_AUTH = process.env.NEXT_PUBLIC_SKIP_AUTH === 'true';
+
 export default function Dashboard() {
     const user = useUser();
     const router = useRouter();
@@ -56,7 +59,8 @@ export default function Dashboard() {
     }, [router]);
 
     useEffect(() => {
-        if (!user) {
+        // 認証スキップモードの場合はリダイレクトしない
+        if (!SKIP_AUTH && !user) {
             router.push("/login");
             return;
         }
@@ -66,7 +70,7 @@ export default function Dashboard() {
 
     const handleAddItem = (newItem: Item & { bag: Bag | null }) => {
         setItems((prev) => [...prev, newItem].sort((a, b) =>
-            new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime()
+            new Date(a.expiryDate || "").getTime() - new Date(b.expiryDate || "").getTime()
         ));
     };
 
@@ -79,12 +83,12 @@ export default function Dashboard() {
             prev.map((item) =>
                 item.id === updatedItem.id ? updatedItem : item
             ).sort((a, b) =>
-                new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime()
+                new Date(a.expiryDate || "").getTime() - new Date(b.expiryDate || "").getTime()
             )
         );
     };
 
-    if (!user || isLoading) {
+    if ((!SKIP_AUTH && !user) || isLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
@@ -92,10 +96,15 @@ export default function Dashboard() {
         );
     }
 
+    // 認証スキップ時のモック表示名
+    const displayName = SKIP_AUTH
+        ? 'テストユーザー'
+        : (user?.displayName || user?.primaryEmail || 'ユーザー');
+
     return (
         <div className="min-h-screen bg-gray-50">
             <Header
-                displayName={user.displayName || user.primaryEmail || "ユーザー"}
+                displayName={displayName}
                 familyName={familyName}
             />
             <main className="max-w-2xl mx-auto px-4 py-6">
