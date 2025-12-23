@@ -121,7 +121,7 @@ export default function EditItemModal({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!name.trim() || !expiryDate) return;
+        if (!name.trim()) return;
 
         setIsSubmitting(true);
 
@@ -133,7 +133,7 @@ export default function EditItemModal({
                     id: item.id,
                     name: name.trim(),
                     quantity,
-                    expiryDate,
+                    expiryDate: expiryDate || null,
                     bagId: bagId || null,
                     locationNote: locationNote.trim() || null,
                 }),
@@ -145,7 +145,7 @@ export default function EditItemModal({
             } else {
                 const data = await res.json();
                 console.error('Error:', data);
-                alert('保存に失敗しました: ' + (data.error || 'Unknown error'));
+                alert('保存に失敗しました: ' + (data.error || 'Unknown error') + (data.details ? `\n詳細: ${data.details}` : ''));
             }
         } catch (error) {
             console.error('Fetch error:', error);
