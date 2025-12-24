@@ -18,9 +18,34 @@ export default function LineSettingsModal({
     const [lineUserId, setLineUserId] = useState(currentLineUserId || "");
     const [lineGroupId, setLineGroupId] = useState(currentLineGroupId || "");
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [validationError, setValidationError] = useState<string | null>(null);
+
+    // グループID形式バリデーション（Cから始まる英数字）
+    const validateGroupId = (id: string): boolean => {
+        if (!id) return true; // 空は許可
+        return /^C[0-9a-f]+$/i.test(id);
+    };
+
+    // User ID形式バリデーション（Uから始まる英数字）
+    const validateUserId = (id: string): boolean => {
+        if (!id) return true; // 空は許可
+        return /^U[0-9a-f]+$/i.test(id);
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setValidationError(null);
+
+        // バリデーション
+        if (!validateGroupId(lineGroupId)) {
+            setValidationError("グループIDはCから始まる文字列である必要があります");
+            return;
+        }
+        if (!validateUserId(lineUserId)) {
+            setValidationError("User IDはUから始まる文字列である必要があります");
+            return;
+        }
+
         setIsSubmitting(true);
 
         try {
@@ -44,8 +69,7 @@ export default function LineSettingsModal({
             } else {
                 alert("保存に失敗しました");
             }
-        } catch (error) {
-            console.error("Save error:", error);
+        } catch {
             alert("通信エラーが発生しました");
         } finally {
             setIsSubmitting(false);
@@ -63,6 +87,12 @@ export default function LineSettingsModal({
                         LINEグループに通知を送ると、家族全員が同時に期限切れ情報を確認できます。
                     </p>
                 </div>
+
+                {validationError && (
+                    <div className="bg-red-50 p-3 rounded-lg mb-4 text-sm text-red-700">
+                        ⚠️ {validationError}
+                    </div>
+                )}
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     {/* グループID入力 */}
