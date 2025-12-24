@@ -1,90 +1,133 @@
-# stockpile-manager
+# 📦 stockpile-manager
 
-非常袋の備蓄品と賞味期限を管理するアプリ
+非常袋の備蓄品と賞味期限を管理するWebアプリ
 
-## 機能
+## ✨ 機能
 
-- 備蓄品の登録（品名・賞味期限）
-- 一覧表示（期限順ソート）
-- 削除機能
-- **袋・場所管理**: 複数の非常袋を管理し、どの袋のどこに何があるか把握
-- **段階的通知**: 30日前・7日前・前日に通知
-  - Web Notification API（ブラウザ通知）
-  - LINE Messaging API（LINE通知）
-- **OCR機能**: 写真から日付を読み取り、入力補助
+### 備蓄品管理
+- 📝 備蓄品の登録・編集・削除
+- 📷 写真から賞味期限を読み取り（OCR）
+- 📊 期限順ソートで一覧表示
+- ⚠️ 期限切れ・期限間近の視覚的警告
 
-## 袋機能の使い方
+### 袋・場所管理
+- 🎒 複数の非常袋を管理（例: 玄関用、車載用）
+- 📍 場所メモで収納場所を記録
+- 🗑️ 袋の削除機能
 
-1. 「袋管理」セクションで袋を作成（例: 玄関用、車載用）
-2. 備蓄品登録時に袋と場所メモを選択
-3. 一覧で各備蓄品の袋・場所が確認できます
+### 家族共有
+- 👨‍👩‍👧‍👦 家族グループの作成
+- 🔗 招待コードで家族メンバーを追加
+- 👥 家族全員で備蓄品を共有管理
 
-## 通知仕様
+### LINE通知
+- 📱 期限7日前にLINE通知
+- 👨‍👩‍👧‍👦 LINEグループへの通知対応
+- 🔔 毎日20時（日本時間）に自動チェック
 
-- 通知タイミング: 30日前、7日前、前日の3段階
-- 同一アイテムにつき、各タイミングで1回のみ通知
-- 通知メッセージに品名と賞味期限を含む
-- LINE通知は設定済みの場合のみ送信
+## 🚀 技術スタック
 
-## 使い方（ローカルサーバー版）
+- **フロントエンド**: Next.js 16 + React 19 + TypeScript
+- **スタイリング**: Tailwind CSS
+- **認証**: Stack Auth
+- **データベース**: Neon (PostgreSQL) + Drizzle ORM
+- **OCR**: OCR.space API
+- **通知**: LINE Messaging API
+- **デプロイ**: Vercel
 
+## 🛠️ セットアップ
+
+### 1. 依存関係インストール
 ```bash
+cd stockpile-manager-next
 npm install
-npm start
+```
+
+### 2. 環境変数設定
+```bash
+cp .env.example .env.local
+```
+
+`.env.local` を編集:
+```env
+# Database (Neon)
+DATABASE_URL=postgresql://...
+
+# Stack Auth
+NEXT_PUBLIC_STACK_PROJECT_ID=...
+NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY=...
+STACK_SECRET_SERVER_KEY=...
+
+# LINE Messaging API
+LINE_CHANNEL_ACCESS_TOKEN=...
+
+# Vercel Cron
+CRON_SECRET=...  # openssl rand -hex 32 で生成
+```
+
+### 3. データベースマイグレーション
+```bash
+npx drizzle-kit push
+```
+
+### 4. 開発サーバー起動
+```bash
+npm run dev
 ```
 
 http://localhost:3000 でアプリを開く
 
-## LINE連携手順
+## 📱 LINE連携設定
 
-### 1. LINE Developers Console でチャネル作成
-1. [LINE Developers Console](https://developers.line.biz/) にログイン
-2. 新規プロバイダー作成 → Messaging API チャネル作成
-3. チャネル基本設定から **Channel Access Token** を発行
+### 個人通知
+1. LINE Developers Console でMessaging APIチャネルを作成
+2. Channel Access Token を発行し環境変数に設定
+3. アプリのLINE設定からUser ID（Uから始まる）を入力
 
-### 2. 環境変数設定
-```bash
-cp .env.example .env
-# .env ファイルを編集し、LINE_CHANNEL_ACCESS_TOKEN を設定
+### グループ通知（推奨）
+1. LINE Developers Console で「ボットのグループチャット参加を許可」をON
+2. Webhook URL設定: `https://your-app.vercel.app/api/line/webhook`
+3. 公式アカウントをグループに招待
+4. グループ内でメッセージ送信
+5. Vercelログで`groupId: C...`を確認
+6. アプリのLINE設定からグループIDを入力
+
+## 📸 OCR機能
+
+- OCR.space API を使用
+- カメラ撮影またはライブラリから画像選択
+- 対応形式: `YYYY-MM-DD`, `YYYY/MM/DD`, `YYYY.MM.DD`, `YYYY年MM月DD日` など
+
+## 🗓️ 自動通知
+
+Vercel Cron Jobsで毎日 UTC 11:00（日本時間 20:00）に実行:
+- 期限7日以内のアイテムを検出
+- 家族にLINEグループIDがあればグループに通知
+- なければ個人のLINE User IDに通知
+
+## 📂 プロジェクト構成
+
+```
+stockpile-manager-next/
+├── app/
+│   ├── api/           # APIエンドポイント
+│   │   ├── bags/      # 袋CRUD
+│   │   ├── cron/      # 通知Cron
+│   │   ├── family/    # 家族管理
+│   │   ├── items/     # 備蓄品CRUD
+│   │   ├── line/      # LINE Webhook
+│   │   ├── ocr/       # OCR処理
+│   │   └── user/      # ユーザー設定
+│   ├── dashboard/     # ダッシュボード
+│   ├── family/        # 家族セットアップ
+│   └── login/         # ログイン
+├── components/        # UIコンポーネント
+├── lib/
+│   ├── auth/          # Stack Auth設定
+│   └── db/            # Drizzle スキーマ
+└── drizzle/           # マイグレーション
 ```
 
-### 3. Webhook設定（友だち追加でUser ID取得）
-1. ngrok等でローカルサーバーを公開: `ngrok http 3000`
-2. LINE Developers Console で Webhook URL を設定: `https://xxxx.ngrok.io/api/line/webhook`
-3. LINEアプリで友だち追加（QRコード）
-4. サーバーコンソールに表示される **LINE User ID** をコピー
+## 📝 ライセンス
 
-### 4. User ID をブラウザに登録
-ブラウザの開発者コンソールで実行:
-```javascript
-setLineUserId('Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
-```
-
-以降、通知時にLINEにもメッセージが届きます。
-
-## 使い方（静的ファイル版）
-
-1. `index.html` をブラウザで開く
-2. 「+ 備蓄品を追加」をクリック
-3. 品名を入力
-4. （任意）「写真を選択」で賞味期限ラベルの写真をアップロード → 日付が自動入力される
-5. 賞味期限を確認・編集して「保存」
-
-## OCR機能について
-
-- Tesseract.js を使用（ブラウザ単独で動作）
-- 対応形式: `YYYY-MM-DD`, `YYYY/MM/DD`, `YYYY.MM.DD`, `YYYY年MM月DD日`
-- OCR結果は候補として表示され、ユーザーが確認・編集可能
-- 初回実行時に言語データ（約2MB）をダウンロード
-
-## 制限事項（MVPスコープ）
-
-以下の機能は意図的に実装していません：
-
-- 在庫数・残量管理
-- 消費・補充ログ
-- 通知のON/OFF設定
-- 通知履歴の閲覧
-- 袋の削除・編集
-- 家族共有・複数ユーザー
-- HEIC形式の画像（JPG/PNGを使用してください）
+MIT
