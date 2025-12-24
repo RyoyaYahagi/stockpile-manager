@@ -22,8 +22,11 @@ export async function GET(request: Request) {
     }
 
     try {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        // JST (UTC+9) で今日の日付を取得
+        const jstOffset = 9 * 60 * 60 * 1000; // 9時間をミリ秒で
+        const nowJST = new Date(Date.now() + jstOffset);
+        const todayStr = nowJST.toISOString().split('T')[0]; // YYYY-MM-DD形式
+        const today = new Date(todayStr);
 
         // 期限30日後（1ヶ月前通知）
         const thirtyDaysLater = new Date(today);
