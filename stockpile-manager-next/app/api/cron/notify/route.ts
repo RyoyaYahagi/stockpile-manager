@@ -8,12 +8,13 @@ const LINE_PUSH_API = "https://api.line.me/v2/bot/message/push";
 const LINE_MULTICAST_API = "https://api.line.me/v2/bot/message/multicast";
 
 export async function GET(request: Request) {
-    // Vercel Cronからのリクエストのみ許可（本番環境）
-    if (process.env.VERCEL_ENV === 'production') {
-        const authHeader = request.headers.get('authorization');
-        if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
+    // Vercel Cronからのリクエストのみ許可（全環境で認証必須）
+    const authHeader = request.headers.get('authorization');
+    if (!process.env.CRON_SECRET) {
+        return NextResponse.json({ error: "CRON_SECRET not set" }, { status: 500 });
+    }
+    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     if (!process.env.LINE_CHANNEL_ACCESS_TOKEN) {

@@ -125,7 +125,19 @@ export async function PUT(request: NextRequest) {
             return NextResponse.json({ error: "Missing id" }, { status: 400 });
         }
 
-        const [updatedItem] = await db.update(items)
+        // 更新対象の存在確認
+        const existingItem = await db.query.items.findFirst({
+            where: and(
+                eq(items.id, id),
+                eq(items.familyId, familyId)
+            ),
+        });
+
+        if (!existingItem) {
+            return NextResponse.json({ error: "Item not found" }, { status: 404 });
+        }
+
+        await db.update(items)
             .set({
                 name,
                 quantity: quantity || 1,
@@ -138,8 +150,7 @@ export async function PUT(request: NextRequest) {
                     eq(items.id, id),
                     eq(items.familyId, familyId)
                 )
-            )
-            .returning();
+            );
 
         // bag情報も含めて返す
         const itemWithBag = await db.query.items.findFirst({
