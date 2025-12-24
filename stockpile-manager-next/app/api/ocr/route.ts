@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
+import { stackServerApp } from "@/lib/auth/stack";
 
 export async function POST(request: NextRequest) {
+    // 認証チェック
+    const user = await stackServerApp.getUser();
+    if (!user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     if (!process.env.OCR_SPACE_API_KEY) {
         return NextResponse.json({ error: "OCR_SPACE_API_KEY not set" }, { status: 500 });
     }

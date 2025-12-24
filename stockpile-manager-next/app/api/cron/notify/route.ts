@@ -98,7 +98,7 @@ export async function GET(request: Request) {
                 });
                 success = res.ok;
                 if (!res.ok) {
-                    console.error(`Failed to send LINE message to group ${data.lineGroupId}`, await res.text());
+                    console.error(`LINE Push API error: status ${res.status}`);
                 }
             }
             // グループIDがなければ個人ユーザーに送信（Multicast API）
@@ -122,7 +122,7 @@ export async function GET(request: Request) {
                 });
                 success = res.ok;
                 if (!res.ok) {
-                    console.error(`Failed to send LINE message to family ${familyId}`, await res.text());
+                    console.error(`LINE Multicast API error: status ${res.status}`);
                 }
             } else {
                 // 送信先がない場合はスキップ
@@ -144,17 +144,25 @@ export async function GET(request: Request) {
 
         return NextResponse.json({ results });
     } catch (error) {
-        console.error("Cron job error:", error);
+        console.error("Cron job error:", error instanceof Error ? error.message : "Unknown error");
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }
 
-function createLineMessage(items: any[]): string {
+interface NotificationItem {
+    name: string;
+    expiryDate: string | null;
+    bag?: { name: string } | null;
+}
+
+function createLineMessage(items: NotificationItem[]): string {
     const lines = ["⚠️ 期限切れ間近の備蓄品があります"];
 
     for (const item of items) {
-        const expiry = new Date(item.expiryDate);
-        lines.push(`・${item.name} (${expiry.toLocaleDateString()}) ${item.bag ? `[${item.bag.name}]` : ''}`);
+        const expiryStr = item.expiryDate
+            ? new Date(item.expiryDate).toLocaleDateString()
+            : "不明";
+        lines.push(`・${item.name} (${expiryStr}) ${item.bag ? `[${item.bag.name}]` : ''}`);
     }
 
     lines.push("\n早めの消費・補充をお願いします！");
