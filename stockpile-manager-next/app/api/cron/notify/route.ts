@@ -3,6 +3,8 @@ import { items } from "@/lib/db/schema";
 import { eq, and, lte, inArray } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
+export const runtime = 'edge';
+
 // LINE Messaging APIのエンドポイント
 const LINE_PUSH_API = "https://api.line.me/v2/bot/message/push";
 const LINE_MULTICAST_API = "https://api.line.me/v2/bot/message/multicast";

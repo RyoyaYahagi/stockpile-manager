@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stackServerApp } from "@/lib/auth/stack";
 
+export const runtime = 'edge';
+
 export async function POST(request: NextRequest) {
     // 認証チェック
     const user = await stackServerApp.getUser();

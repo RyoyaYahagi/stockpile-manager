@@ -4,6 +4,8 @@ import { items, users, bags } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
+export const runtime = 'edge';
+
 // インポートアイテムの型定義
 interface ImportItem {
     name: string;
