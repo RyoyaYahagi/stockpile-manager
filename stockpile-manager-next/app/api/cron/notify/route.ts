@@ -74,9 +74,8 @@ export async function GET(request: Request) {
             allItemsMap.set(item.id, { ...item, notifyType: '30' });
         }
         for (const item of items7) {
-            if (!allItemsMap.has(item.id)) {
-                allItemsMap.set(item.id, { ...item, notifyType: '7' });
-            }
+            // 7日前通知を優先（30日前の通知を上書き）
+            allItemsMap.set(item.id, { ...item, notifyType: '7' });
         }
         const targetItems = Array.from(allItemsMap.values());
 
