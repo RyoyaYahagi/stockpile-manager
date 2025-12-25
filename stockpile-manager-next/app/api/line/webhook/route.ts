@@ -1,21 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
-import crypto from "crypto";
 
-// LINE署名検証
-function validateSignature(body: string, signature: string): boolean {
+export const runtime = 'edge';
+
+// Web Crypto APIを使用したLINE署名検証
+async function validateSignature(body: string, signature: string): Promise<boolean> {
     const channelSecret = process.env.LINE_CHANNEL_SECRET;
     if (!channelSecret) {
         console.error("LINE_CHANNEL_SECRET not set");
         return false;
     }
 
-    const hash = crypto
-        .createHmac("sha256", channelSecret)
-        .update(body)
-        .digest("base64");
-
     try {
-        return crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(signature));
+        const encoder = new TextEncoder();
+        const key = await crypto.subtle.importKey(
+            "raw",
+            encoder.encode(channelSecret),
+            { name: "HMAC", hash: "SHA-256" },
+            false,
+            ["sign"]
+        );
+        const signatureBytes = await crypto.subtle.sign(
+            "HMAC",
+            key,
+            encoder.encode(body)
+        );
+        const hash = btoa(String.fromCharCode(...new Uint8Array(signatureBytes)));
+        return hash === signature;
     } catch {
         return false;
     }
@@ -37,7 +47,7 @@ export async function POST(request: NextRequest) {
         const bodyText = await request.text();
 
         if (process.env.NODE_ENV === "production") {
-            if (!signature || !validateSignature(bodyText, signature)) {
+            if (!signature || !(await validateSignature(bodyText, signature))) {
                 console.error("LINE Webhook: Invalid signature");
                 return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
             }

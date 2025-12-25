@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
+export const runtime = 'edge';
+
 const LINE_REPLY_API = "https://api.line.me/v2/bot/message/reply";
 
 export async function POST(request: NextRequest) {

@@ -79,7 +79,7 @@ export default function LineSettingsModal({
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
             <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
-                <h2 className="text-xl font-bold mb-4">LINE通知設定</h2>
+                <h2 className="text-xl font-bold mb-4 text-gray-900">LINE通知設定</h2>
 
                 <div className="bg-blue-50 p-4 rounded-lg mb-4 text-sm text-blue-800">
                     <p className="font-bold mb-2">💡 グループ通知がおすすめ！</p>
@@ -137,7 +137,7 @@ export default function LineSettingsModal({
                         <button
                             type="button"
                             onClick={onClose}
-                            className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50"
+                            className="flex-1 px-4 py-2 border text-gray-700 rounded-lg hover:bg-gray-50"
                         >
                             キャンセル
                         </button>
