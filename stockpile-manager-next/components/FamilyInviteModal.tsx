@@ -69,7 +69,7 @@ export default function FamilyInviteModal({ onClose }: FamilyInviteModalProps) {
             <div className="bg-white rounded-2xl max-w-sm w-full shadow-xl">
                 <div className="p-6">
                     <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-xl font-bold">👨‍👩‍👧‍👦 家族を招待</h2>
+                        <h2 className="text-xl font-bold text-gray-900">👨‍👩‍👧‍👦 家族を招待</h2>
                         <button
                             onClick={onClose}
                             className="text-gray-400 hover:text-gray-600 text-2xl"

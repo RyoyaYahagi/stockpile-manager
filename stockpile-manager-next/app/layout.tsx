@@ -17,6 +17,16 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "備蓄品管理",
   description: "家族で共有できる備蓄品管理アプリ",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "備蓄管理",
+  },
+  icons: {
+    icon: "/icon-192x192.png",
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 export default function RootLayout({

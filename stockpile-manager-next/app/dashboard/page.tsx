@@ -139,7 +139,7 @@ export default function Dashboard() {
                     </button>
                     <button
                         onClick={() => setIsLineModalOpen(true)}
-                        className={`text-sm px-3 py-1 rounded border flex items-center gap-1 ${(lineUserId || lineGroupId) ? "bg-green-50 text-green-700 border-green-200" : "bg-gray-50 text-gray-500 border-gray-200"}`}
+                        className={`text-sm px-3 py-1 rounded border flex items-center gap-1 ${(lineUserId || lineGroupId) ? "bg-green-50 text-green-700 border-green-200" : "bg-gray-50 text-gray-700 border-gray-200"}`}
                     >
                         <span>💬</span>
                         {(lineUserId || lineGroupId) ? "LINE連携設定" : "LINE未連携"}

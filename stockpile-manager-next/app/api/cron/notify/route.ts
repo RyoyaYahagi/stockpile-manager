@@ -3,6 +3,8 @@ import { items } from "@/lib/db/schema";
 import { eq, and, lte, inArray } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
+export const runtime = 'edge';
+
 // LINE Messaging APIのエンドポイント
 const LINE_PUSH_API = "https://api.line.me/v2/bot/message/push";
 const LINE_MULTICAST_API = "https://api.line.me/v2/bot/message/multicast";
@@ -74,9 +76,8 @@ export async function GET(request: Request) {
             allItemsMap.set(item.id, { ...item, notifyType: '30' });
         }
         for (const item of items7) {
-            if (!allItemsMap.has(item.id)) {
-                allItemsMap.set(item.id, { ...item, notifyType: '7' });
-            }
+            // 7日前通知を優先（30日前の通知を上書き）
+            allItemsMap.set(item.id, { ...item, notifyType: '7' });
         }
         const targetItems = Array.from(allItemsMap.values());
 

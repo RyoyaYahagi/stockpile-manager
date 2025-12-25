@@ -124,7 +124,7 @@ export default function ImportItemsModal({
             <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col">
                 {/* ヘッダー */}
                 <div className="px-6 py-4 border-b flex justify-between items-center">
-                    <h2 className="text-lg font-semibold">📥 JSONインポート</h2>
+                    <h2 className="text-lg font-semibold text-gray-900">📥 JSONインポート</h2>
                     <button
                         onClick={onClose}
                         className="text-gray-500 hover:text-gray-700 text-2xl"
@@ -218,7 +218,7 @@ export default function ImportItemsModal({
                 <div className="px-6 py-4 border-t flex gap-3">
                     <button
                         onClick={onClose}
-                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                        className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
                     >
                         キャンセル
                     </button>

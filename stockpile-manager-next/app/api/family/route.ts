@@ -4,6 +4,8 @@ import { families, users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
+export const runtime = 'edge';
+
 // 家族情報を取得（招待コード、メンバー一覧）
 export async function GET() {
     const user = await stackServerApp.getUser();

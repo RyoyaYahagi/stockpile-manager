@@ -4,6 +4,8 @@ import { items, users, bags } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
+export const runtime = 'edge';
+
 export async function GET() {
     const user = await stackServerApp.getUser();
     if (!user) {
