@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { lineLinkTokens, users, families } from "@/lib/db/schema";
 import { eq, and, gt } from "drizzle-orm";
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 const LINE_REPLY_API = "https://api.line.me/v2/bot/message/reply";
 
