@@ -11,7 +11,9 @@ interface LineSettingsModalProps {
 }
 
 // LINE公式アカウントの友だち追加URL
-const LINE_BOT_ID = process.env.NEXT_PUBLIC_LINE_BOT_ID || "@stockpile-manager";
+const RAW_LINE_BOT_ID = process.env.NEXT_PUBLIC_LINE_BOT_ID || "stockpile-manager";
+// @が付いていない場合は自動追加
+const LINE_BOT_ID = RAW_LINE_BOT_ID.startsWith('@') ? RAW_LINE_BOT_ID : `@${RAW_LINE_BOT_ID}`;
 const LINE_BOT_URL = `https://line.me/R/ti/p/${LINE_BOT_ID}`;
 
 export default function LineSettingsModal({
