@@ -43,7 +43,7 @@ export default function LineSettingsModal({
     const [linkCode, setLinkCode] = useState<string | null>(null);
     const [expiresAt, setExpiresAt] = useState<Date | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
-    const [isLinked, setIsLinked] = useState(!!currentLineUserId);
+    const [isLinked, setIsLinked] = useState(!!currentLineUserId || !!currentLineGroupId);
     const [showManualInput, setShowManualInput] = useState(false);
 
     // グループID形式バリデーション（Cから始まる英数字）
@@ -201,7 +201,7 @@ export default function LineSettingsModal({
                             {lineGroupId || lineUserId || "Connecting..."}
                         </p>
                         <p className="text-xs text-green-600 mt-4">
-                            期限切れ通知がLINEに届きます。<br />変更したい場合は再度連携を行ってください。
+                            期限が近づいたら通知がLINEに届きます。<br />変更したい場合は再度連携を行ってください。
                         </p>
                     </div>
                 )}
@@ -339,6 +339,6 @@ export default function LineSettingsModal({
                     </button>
                 </div>
             </div>
-        </div>
+        </div >
     );
 }
