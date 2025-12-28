@@ -16,22 +16,23 @@ export default function LoginPage() {
     }, [user, router]);
 
     const handleGuestLogin = async () => {
-        // ランダムなゲスト情報を生成（Stack Authの設定不要で確実に動作する方式）
+        // ランダムなゲスト情報を生成
         const randomString = Math.random().toString(36).substring(7);
         const timestamp = Date.now();
-        // 重複しないユニークなメールアドレスを生成
+        // ユニークなメールアドレス
         const email = `guest-${timestamp}-${randomString}@example.com`;
-        const password = `guest-${timestamp}-${randomString}`; // パスワードもランダム
+        // パスワード要件（大文字・小文字・数字・記号）を満たすように強化
+        const password = `Guest-${timestamp}-${randomString}!`;
 
         try {
             await app.signUpWithCredential({
                 email,
                 password,
             });
-        } catch (error) {
+        } catch (error: any) {
             console.error("Guest login failed:", error);
-            // エラーの種類によってはメッセージを変えることも検討
-            alert("ゲストログインに失敗しました。もう一度お試しください。");
+            // 具体的なエラー内容を表示してデバッグしやすくする
+            alert(`ゲストログインに失敗しました。\nエラー: ${error.message || "不明なエラー"}`);
         }
     };
 
