@@ -25,6 +25,7 @@
 
 ### LINE通知
 - 📱 期限30日前、7日前、当日にLINE通知
+- 🔗 QRコードで簡単連携（6桁コードで紐付け）
 - 👨‍👩‍👧‍👦 LINEグループへの通知対応
 - 🔔 毎日午前8時（日本時間）に自動チェック
 
@@ -67,6 +68,7 @@ OCR_SPACE_API_KEY=...
 # LINE Messaging API
 LINE_CHANNEL_ACCESS_TOKEN=...
 LINE_CHANNEL_SECRET=...
+NEXT_PUBLIC_LINE_BOT_ID=@xxx
 
 # Vercel Cron
 CRON_SECRET=...  # openssl rand -hex 32 で生成
@@ -86,18 +88,33 @@ http://localhost:3000 でアプリを開く
 
 ## 📱 LINE連携設定
 
-### 個人通知
-1. LINE Developers Console でMessaging APIチャネルを作成
-2. Channel Access Token と Channel Secret を発行し環境変数に設定
-3. アプリのLINE設定からUser ID（Uから始まる）を入力
+### 簡単連携（QRコード）
+1. アプリのダッシュボードで「LINE連携設定」をクリック
+2. 「連携コードを発行」ボタンをクリック
+3. 表示されたQRコードをスキャンしてLINEボットを友だち追加
+4. LINEに表示された6桁のコードをボットに送信
+5. 自動的に連携完了！
+
+### 環境変数設定
+LINE Developers ConsoleでMessaging APIチャネルを作成し、以下を設定:
+```env
+LINE_CHANNEL_ACCESS_TOKEN=...  # Channel Access Token
+LINE_CHANNEL_SECRET=...         # Channel Secret
+NEXT_PUBLIC_LINE_BOT_ID=@xxx   # LINE Bot ID（QRコード用）
+```
+
+### Webhook URL設定
+LINE Developers Console → Messaging API → Webhook設定:
+```
+https://your-app.vercel.app/api/webhook/line
+```
 
 ### グループ通知（推奨）
 1. LINE Developers Console で「ボットのグループチャット参加を許可」をON
-2. Webhook URL設定: `https://your-app.vercel.app/api/line/webhook`
-3. 公式アカウントをグループに招待
-4. グループ内でメッセージ送信
-5. Vercelログで`groupId: C...`を確認
-6. アプリのLINE設定からグループIDを入力
+2. 公式アカウントをグループに招待
+3. グループ内でメッセージ送信
+4. Vercelログで`groupId: C...`を確認
+5. アプリのLINE設定（詳細設定）からグループIDを手動入力
 
 ## 📸 OCR機能
 
@@ -122,7 +139,7 @@ stockpile-manager-next/
 │   │   ├── cron/      # 通知Cron
 │   │   ├── family/    # 家族管理
 │   │   ├── items/     # 備蓄品CRUD
-│   │   ├── line/      # LINE Webhook
+│   │   ├── line/      # LINE Webhook・リンク
 │   │   ├── ocr/       # OCR処理
 │   │   └── user/      # ユーザー設定
 │   ├── dashboard/     # ダッシュボード
