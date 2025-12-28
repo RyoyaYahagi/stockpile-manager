@@ -76,8 +76,19 @@ export const itemsRelations = relations(items, ({ one }) => ({
     }),
 }));
 
+// LINEリンクトークンテーブル（QRコード連携用）
+export const lineLinkTokens = pgTable('line_link_tokens', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    token: text('token').unique().notNull(), // 6桁のコード
+    expiresAt: timestamp('expires_at').notNull(),
+    used: boolean('used').default(false),
+    createdAt: timestamp('created_at').defaultNow(),
+});
+
 // 型エクスポート
 export type Family = typeof families.$inferSelect;
 export type User = typeof users.$inferSelect;
 export type Bag = typeof bags.$inferSelect;
 export type Item = typeof items.$inferSelect;
+export type LineLinkToken = typeof lineLinkTokens.$inferSelect;
