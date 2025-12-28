@@ -1,6 +1,6 @@
 import { stackServerApp } from "@/lib/auth/stack";
 import { db } from "@/lib/db";
-import { lineLinkTokens, users } from "@/lib/db/schema";
+import { lineLinkTokens, users, families } from "@/lib/db/schema";
 import { eq, and, gt } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
@@ -76,15 +76,19 @@ export async function GET() {
     }
 
     try {
-        // ユーザーのLINE User IDを取得
+        // ユーザーと家族のLINE連携情報を取得
         const dbUser = await db.query.users.findFirst({
             where: eq(users.id, user.id),
+            with: {
+                family: true,
+            }
         });
 
-        if (dbUser?.lineUserId) {
+        if (dbUser?.lineUserId || dbUser?.family?.lineGroupId) {
             return NextResponse.json({
                 linked: true,
-                lineUserId: dbUser.lineUserId,
+                lineUserId: dbUser?.lineUserId,
+                lineGroupId: dbUser?.family?.lineGroupId,
             });
         }
 

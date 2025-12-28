@@ -16,6 +16,18 @@ const RAW_LINE_BOT_ID = process.env.NEXT_PUBLIC_LINE_BOT_ID || "stockpile-manage
 const LINE_BOT_ID = RAW_LINE_BOT_ID.startsWith('@') ? RAW_LINE_BOT_ID : `@${RAW_LINE_BOT_ID}`;
 const LINE_BOT_URL = `https://line.me/R/ti/p/${LINE_BOT_ID}`;
 
+// 簡易的な紙吹雪アニメーション用のCSSクラス
+const pulseAnimation = `
+@keyframes pulse-once {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+.animate-pulse-once {
+  animation: pulse-once 0.5s ease-in-out;
+}
+`;
+
 export default function LineSettingsModal({
     currentLineUserId,
     currentLineGroupId,
@@ -73,14 +85,19 @@ export default function LineSettingsModal({
                 const data = await res.json();
                 if (data.linked) {
                     setIsLinked(true);
-                    setLineUserId(data.lineUserId);
-                    onSave(data.lineUserId, lineGroupId || null);
+                    setLineUserId(data.lineUserId || "");
+                    setLineGroupId(data.lineGroupId || "");
+
+                    // 以前リンクされていなかった場合、保存処理を実行
+                    if (!currentLineUserId && !currentLineGroupId) {
+                        onSave(data.lineUserId || "", data.lineGroupId || null);
+                    }
                 }
             }
         } catch {
             // エラーは無視
         }
-    }, [lineGroupId, onSave]);
+    }, [currentLineUserId, currentLineGroupId, onSave]);
 
     // 有効期限の残り時間を計算
     const getRemainingTime = () => {
@@ -171,10 +188,20 @@ export default function LineSettingsModal({
 
                 {/* 連携済みの場合 */}
                 {isLinked && (
-                    <div className="bg-green-50 p-4 rounded-lg mb-4">
-                        <p className="text-green-800 font-bold mb-2">✅ LINE連携済み</p>
-                        <p className="text-sm text-green-700">
-                            期限切れ通知をLINEで受け取れます。
+                    <div className="bg-green-100 border-2 border-green-500 p-6 rounded-xl mb-6 text-center animate-pulse-once shadow-sm">
+                        <style>{pulseAnimation}</style>
+                        <div className="text-4xl mb-3">🎉</div>
+                        <p className="text-green-800 font-bold text-xl mb-2">LINE連携完了！</p>
+                        <p className="text-green-700 font-medium mb-1">
+                            {lineGroupId
+                                ? "家族グループと連携されています"
+                                : "個人アカウントと連携されています"}
+                        </p>
+                        <p className="text-sm text-green-600 font-mono bg-green-50 inline-block px-3 py-1 rounded-full mt-2">
+                            {lineGroupId || lineUserId || "Connecting..."}
+                        </p>
+                        <p className="text-xs text-green-600 mt-4">
+                            期限切れ通知がLINEに届きます。<br />変更したい場合は再度連携を行ってください。
                         </p>
                     </div>
                 )}
