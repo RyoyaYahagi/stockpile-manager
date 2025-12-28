@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { lineLinkTokens, users } from "@/lib/db/schema";
+import { lineLinkTokens, users, families } from "@/lib/db/schema";
 import { eq, and, gt } from "drizzle-orm";
 
 export const runtime = 'edge';
@@ -38,12 +38,22 @@ export async function POST(request: NextRequest) {
         }
 
         for (const event of events) {
-            const lineUserId = event.source?.userId;
+            const source = event.source;
             const replyToken = event.replyToken;
+            const lineUserId = source?.userId;
+            const lineGroupId = source?.groupId; // グループからのメッセージの場合
 
-            if (!lineUserId) continue;
+            // ボットがグループに参加した時
+            if (event.type === 'join' && lineGroupId) {
+                await replyToLine(replyToken,
+                    '備蓄管理アプリのグループ連携を設定します🎉\n\n' +
+                    'アプリに表示された6桁のコードをこのグループに送信してください。\n\n' +
+                    '家族全員がこのグループで通知を受け取れるようになります！'
+                );
+                continue;
+            }
 
-            // 友だち追加イベント
+            // 友だち追加イベント（1対1）
             if (event.type === 'follow') {
                 await replyToLine(replyToken,
                     '備蓄管理アプリへようこそ！🎉\n\n' +
@@ -69,24 +79,61 @@ export async function POST(request: NextRequest) {
                     });
 
                     if (linkToken) {
-                        // ユーザーのlineUserIdを更新
-                        await db.update(users)
-                            .set({ lineUserId: lineUserId })
-                            .where(eq(users.id, linkToken.userId));
+                        // グループからのメッセージの場合
+                        if (lineGroupId) {
+                            // ユーザーの家族を取得
+                            const user = await db.query.users.findFirst({
+                                where: eq(users.id, linkToken.userId),
+                            });
 
-                        // トークンを使用済みにする
-                        await db.update(lineLinkTokens)
-                            .set({ used: true })
-                            .where(eq(lineLinkTokens.id, linkToken.id));
+                            if (user?.familyId) {
+                                // 家族のlineGroupIdを更新
+                                await db.update(families)
+                                    .set({ lineGroupId: lineGroupId })
+                                    .where(eq(families.id, user.familyId));
 
-                        await replyToLine(replyToken,
-                            '✅ LINE連携が完了しました！\n\n' +
-                            'これで備蓄品の期限切れ通知をLINEで受け取れます。\n\n' +
-                            '通知タイミング:\n' +
-                            '・30日前\n' +
-                            '・7日前\n' +
-                            '・当日'
-                        );
+                                // トークンを使用済みにする
+                                await db.update(lineLinkTokens)
+                                    .set({ used: true })
+                                    .where(eq(lineLinkTokens.id, linkToken.id));
+
+                                await replyToLine(replyToken,
+                                    '✅ グループ連携が完了しました！\n\n' +
+                                    'これで備蓄品の期限切れ通知をこのグループで受け取れます。\n\n' +
+                                    '通知タイミング:\n' +
+                                    '・30日前\n' +
+                                    '・7日前\n' +
+                                    '・当日'
+                                );
+                            } else {
+                                await replyToLine(replyToken,
+                                    '❌ 家族グループが見つかりませんでした。\n\n' +
+                                    'アプリで家族グループを作成してから再度お試しください。'
+                                );
+                            }
+                        } else {
+                            // 1対1のメッセージの場合（個人連携）
+                            if (lineUserId) {
+                                await db.update(users)
+                                    .set({ lineUserId: lineUserId })
+                                    .where(eq(users.id, linkToken.userId));
+
+                                // トークンを使用済みにする
+                                await db.update(lineLinkTokens)
+                                    .set({ used: true })
+                                    .where(eq(lineLinkTokens.id, linkToken.id));
+
+                                await replyToLine(replyToken,
+                                    '✅ LINE連携が完了しました！\n\n' +
+                                    'これで備蓄品の期限切れ通知をLINEで受け取れます。\n\n' +
+                                    '通知タイミング:\n' +
+                                    '・30日前\n' +
+                                    '・7日前\n' +
+                                    '・当日\n\n' +
+                                    '💡 ヒント: グループに通知したい場合は、ボットをグループに追加して、グループ内でコードを送信してください。'
+                                );
+                            }
+                        }
                     } else {
                         await replyToLine(replyToken,
                             '❌ コードが見つかりませんでした。\n\n' +
@@ -96,8 +143,11 @@ export async function POST(request: NextRequest) {
                             'アプリで新しいコードを発行してお試しください。'
                         );
                     }
+                } else if (lineGroupId) {
+                    // グループ内のその他のメッセージは無視（スパム防止）
+                    // 何もしない
                 } else {
-                    // その他のメッセージ
+                    // 1対1のその他のメッセージ
                     await replyToLine(replyToken,
                         '📱 備蓄管理アプリからの通知をお届けします。\n\n' +
                         'LINE連携をするには、アプリに表示された6桁のコードを送信してください。'
