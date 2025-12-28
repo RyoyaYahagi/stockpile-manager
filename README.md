@@ -109,12 +109,12 @@ LINE Developers Console → Messaging API → Webhook設定:
 https://your-app.vercel.app/api/webhook/line
 ```
 
-### グループ通知（推奨）
+### グループ連携（推奨）
 1. LINE Developers Console で「ボットのグループチャット参加を許可」をON
-2. 公式アカウントをグループに招待
-3. グループ内でメッセージ送信
-4. Vercelログで`groupId: C...`を確認
-5. アプリのLINE設定（詳細設定）からグループIDを手動入力
+2. ボットをLINEグループに招待
+3. アプリで「連携コードを発行」ボタンをクリック
+4. 表示された6桁のコードを**グループ内で**送信
+5. 自動的にグループ連携完了！（家族全員に通知が届きます）
 
 ## 📸 OCR機能
 
