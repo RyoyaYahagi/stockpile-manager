@@ -1,5 +1,7 @@
 # 📦 stockpile-manager
 
+[https://stockpile-manager.vercel.app/](https://stockpile-manager.vercel.app/)
+
 非常袋の備蓄品と賞味期限を管理するWebアプリ
 
 ## ✨ 機能
@@ -15,20 +17,21 @@
 - 📍 場所メモで収納場所を記録
 - 🗑️ 袋の削除機能
 
-### 家族共有
+### ユーザー・家族共有
+- 👤 ゲストログイン機能（登録なしでお試し利用）
 - 👨‍👩‍👧‍👦 家族グループの作成
 - 🔗 招待コードで家族メンバーを追加
 - 👥 家族全員で備蓄品を共有管理
 
 ### LINE通知
-- 📱 期限7日前にLINE通知
+- 📱 期限30日前と7日前にLINE通知
 - 👨‍👩‍👧‍👦 LINEグループへの通知対応
 - 🔔 毎日20時（日本時間）に自動チェック
 
 ## 🚀 技術スタック
 
-- **フロントエンド**: Next.js 16 + React 19 + TypeScript
-- **スタイリング**: Tailwind CSS
+- **フロントエンド**: Next.js 16.1 + React 19.2 + TypeScript
+- **スタイリング**: Tailwind CSS 4
 - **認証**: Stack Auth
 - **データベース**: Neon (PostgreSQL) + Drizzle ORM
 - **OCR**: OCR.space API
@@ -58,8 +61,12 @@ NEXT_PUBLIC_STACK_PROJECT_ID=...
 NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY=...
 STACK_SECRET_SERVER_KEY=...
 
+# OCR.space API
+OCR_SPACE_API_KEY=...
+
 # LINE Messaging API
 LINE_CHANNEL_ACCESS_TOKEN=...
+LINE_CHANNEL_SECRET=...
 
 # Vercel Cron
 CRON_SECRET=...  # openssl rand -hex 32 で生成
@@ -81,7 +88,7 @@ http://localhost:3000 でアプリを開く
 
 ### 個人通知
 1. LINE Developers Console でMessaging APIチャネルを作成
-2. Channel Access Token を発行し環境変数に設定
+2. Channel Access Token と Channel Secret を発行し環境変数に設定
 3. アプリのLINE設定からUser ID（Uから始まる）を入力
 
 ### グループ通知（推奨）
@@ -101,7 +108,7 @@ http://localhost:3000 でアプリを開く
 ## 🗓️ 自動通知
 
 Vercel Cron Jobsで毎日 UTC 11:00（日本時間 20:00）に実行:
-- 期限7日以内のアイテムを検出
+- 期限30日以内、または7日以内のアイテムを検出
 - 家族にLINEグループIDがあればグループに通知
 - なければ個人のLINE User IDに通知
 
