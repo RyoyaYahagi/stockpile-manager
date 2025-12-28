@@ -4,7 +4,7 @@ import { lineLinkTokens, users } from "@/lib/db/schema";
 import { eq, and, gt } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 // 6桁のランダムコードを生成
 function generateLinkCode(): string {
