@@ -70,14 +70,35 @@ export async function GET(request: Request) {
             }
         });
 
-        // 通知対象を結合（重複除外）
-        const allItemsMap = new Map<string, typeof items30[0] & { notifyType: '30' | '7' }>();
+        // 当日通知対象
+        const items0 = await db.query.items.findMany({
+            where: and(
+                lte(items.expiryDate, todayStr),
+                eq(items.notified1, false)
+            ),
+            with: {
+                family: {
+                    with: {
+                        users: true
+                    }
+                },
+                bag: true
+            }
+        });
+
+
+        // 通知対象を結合（重複除外、当日 > 7日前 > 30日前 の優先順）
+        const allItemsMap = new Map<string, typeof items30[0] & { notifyType: '30' | '7' | '0' }>();
         for (const item of items30) {
             allItemsMap.set(item.id, { ...item, notifyType: '30' });
         }
         for (const item of items7) {
             // 7日前通知を優先（30日前の通知を上書き）
             allItemsMap.set(item.id, { ...item, notifyType: '7' });
+        }
+        for (const item of items0) {
+            // 当日通知を最優先（7日前の通知を上書き）
+            allItemsMap.set(item.id, { ...item, notifyType: '0' });
         }
         const targetItems = Array.from(allItemsMap.values());
 
@@ -91,6 +112,7 @@ export async function GET(request: Request) {
             userIds: string[];
             items30: typeof targetItems;
             items7: typeof targetItems;
+            items0: typeof targetItems;
         }>();
 
         for (const item of targetItems) {
@@ -106,22 +128,25 @@ export async function GET(request: Request) {
                     lineGroupId: family.lineGroupId,
                     userIds: lineUserIds,
                     items30: [],
-                    items7: []
+                    items7: [],
+                    items0: []
                 });
             }
             const data = familyNotifications.get(family.id)!;
             if (item.notifyType === '30') {
                 data.items30.push(item);
-            } else {
+            } else if (item.notifyType === '7') {
                 data.items7.push(item);
+            } else {
+                data.items0.push(item);
             }
         }
 
         // LINE通知送信
         const results = [];
         for (const [familyId, data] of familyNotifications.entries()) {
-            const allNotifyItems = [...data.items30, ...data.items7];
-            const message = createLineMessage(allNotifyItems, data.items30.length > 0, data.items7.length > 0);
+            const allNotifyItems = [...data.items30, ...data.items7, ...data.items0];
+            const message = createLineMessage(allNotifyItems, data.items30.length > 0, data.items7.length > 0, data.items0.length > 0);
             let success = false;
 
             // グループIDがあればグループに送信（Push API）
@@ -176,7 +201,7 @@ export async function GET(request: Request) {
             }
 
             if (success) {
-                // 通知済みフラグを更新（30日前と7日前を別々に）
+                // 通知済みフラグを更新（30日前、7日前、当日を別々に）
                 if (data.items30.length > 0) {
                     const itemIds30 = data.items30.map((i: { id: string }) => i.id);
                     await db.update(items)
@@ -188,6 +213,12 @@ export async function GET(request: Request) {
                     await db.update(items)
                         .set({ notified7: true })
                         .where(inArray(items.id, itemIds7));
+                }
+                if (data.items0.length > 0) {
+                    const itemIds0 = data.items0.map((i: { id: string }) => i.id);
+                    await db.update(items)
+                        .set({ notified1: true })
+                        .where(inArray(items.id, itemIds0));
                 }
 
                 results.push({ familyId, success: true, type: data.lineGroupId ? 'group' : 'individual' });
@@ -207,13 +238,15 @@ interface NotificationItem {
     name: string;
     expiryDate: string | null;
     bag?: { name: string } | null;
-    notifyType?: '30' | '7';
+    notifyType?: '30' | '7' | '0';
 }
 
-function createLineMessage(items: NotificationItem[], has30Days: boolean, has7Days: boolean): string {
+function createLineMessage(items: NotificationItem[], has30Days: boolean, has7Days: boolean, has0Days: boolean): string {
     const lines: string[] = [];
 
-    if (has30Days && has7Days) {
+    if (has0Days) {
+        lines.push("🚨 本日期限の備蓄品があります！");
+    } else if (has30Days && has7Days) {
         lines.push("⚠️ 期限切れ間近の備蓄品があります");
     } else if (has30Days) {
         lines.push("📅 1ヶ月以内に期限が切れる備蓄品があります");
@@ -225,7 +258,12 @@ function createLineMessage(items: NotificationItem[], has30Days: boolean, has7Da
         const expiryStr = item.expiryDate
             ? new Date(item.expiryDate).toLocaleDateString()
             : "不明";
-        const typeLabel = item.notifyType === '30' ? '(1ヶ月前)' : '(7日前)';
+        let typeLabel = '(1ヶ月前)';
+        if (item.notifyType === '7') {
+            typeLabel = '(7日前)';
+        } else if (item.notifyType === '0') {
+            typeLabel = '(当日)';
+        }
         lines.push(`・${item.name} ${typeLabel} - ${expiryStr} ${item.bag ? `[${item.bag.name}]` : ''}`);
     }
 
