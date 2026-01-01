@@ -206,7 +206,7 @@ export default function ItemList({
                         className="btn-primary flex items-center gap-1"
                     >
                         <span>＋</span>
-                        <span>備蓄品を追加</span>
+                        <span className="hidden sm:inline">備蓄品を</span><span>追加</span>
                     </button>
                 </div>
             </div>
@@ -278,7 +278,7 @@ export default function ItemList({
                                 onClick={() => setIsAddModalOpen(true)}
                                 className="bg-blue-500 text-white px-6 py-3 rounded-full font-medium hover:bg-blue-600 transition-colors shadow-md"
                             >
-                                + 備蓄品を追加
+                                + <span className="hidden sm:inline">備蓄品を</span>追加
                             </button>
                         )}
                     </div>
