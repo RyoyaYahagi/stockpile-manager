@@ -196,15 +196,17 @@ export default function ItemList({
                     )}
                     <button
                         onClick={() => setIsImportModalOpen(true)}
-                        className="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm"
+                        className="btn-secondary text-sm flex items-center gap-1"
                     >
-                        📥 インポート
+                        <span>📥</span>
+                        <span>インポート</span>
                     </button>
                     <button
                         onClick={() => setIsAddModalOpen(true)}
-                        className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+                        className="btn-primary flex items-center gap-1"
                     >
-                        + 追加
+                        <span>＋</span>
+                        <span>備蓄品を追加</span>
                     </button>
                 </div>
             </div>
@@ -258,29 +260,32 @@ export default function ItemList({
             </div>
 
             {sortedItems.length === 0 ? (
-                <div className="text-center py-16">
-                    <div className="text-6xl mb-4">📦</div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                        {activeTab === "ALL"
-                            ? "備蓄品がありません"
-                            : "この袋には備蓄品がありません"}
-                    </h3>
-                    <p className="text-gray-600 mb-6">
-                        {activeTab === "ALL"
-                            ? "まずは備蓄品を登録しましょう"
-                            : "他の袋から移動するか、新しく追加してください"}
-                    </p>
-                    {activeTab === "ALL" && (
-                        <button
-                            onClick={() => setIsAddModalOpen(true)}
-                            className="bg-blue-500 text-white px-6 py-3 rounded-full font-medium hover:bg-blue-600 transition-colors shadow-md"
-                        >
-                            + 備蓄品を追加
-                        </button>
-                    )}
+                <div className="tab-content">
+                    <div className="text-center py-16">
+                        <div className="text-6xl mb-4">📦</div>
+                        <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                            {activeTab === "ALL"
+                                ? "備蓄品がありません"
+                                : "この袋には備蓄品がありません"}
+                        </h3>
+                        <p className="text-gray-600 mb-6">
+                            {activeTab === "ALL"
+                                ? "まずは備蓄品を登録しましょう"
+                                : "他の袋から移動するか、新しく追加してください"}
+                        </p>
+                        {activeTab === "ALL" && (
+                            <button
+                                onClick={() => setIsAddModalOpen(true)}
+                                className="bg-blue-500 text-white px-6 py-3 rounded-full font-medium hover:bg-blue-600 transition-colors shadow-md"
+                            >
+                                + 備蓄品を追加
+                            </button>
+                        )}
+                    </div>
                 </div>
             ) : (
-                <div className="space-y-3">
+                <div className="space-y-3 tab-content">
+
                     <div className="flex items-center gap-2 px-2 mb-2">
                         <label className="flex items-center gap-3 cursor-pointer min-h-[44px]">
                             <div className="w-11 h-11 flex items-center justify-center">
@@ -300,14 +305,17 @@ export default function ItemList({
                             const daysLeft = item.expiryDate ? getDaysUntilExpiry(item.expiryDate) : null;
                             let statusClass = "text-gray-800";
                             let statusText = "";
+                            let expiryClass = "expiry-safe";
 
                             if (daysLeft !== null) {
                                 if (daysLeft < 0) {
                                     statusClass = "text-red-600 font-semibold";
                                     statusText = `（${Math.abs(daysLeft)}日経過）`;
+                                    expiryClass = "expiry-expired";
                                 } else if (daysLeft <= 7) {
                                     statusClass = "text-orange-600 font-semibold";
-                                    statusText = `（あと${daysLeft}日）`;
+                                    statusText = daysLeft === 0 ? "（今日まで）" : `（あと${daysLeft}日）`;
+                                    expiryClass = "expiry-imminent";
                                 }
                             }
 
@@ -315,7 +323,7 @@ export default function ItemList({
                                 <li
                                     key={item.id}
                                     onClick={() => setEditTarget(item)}
-                                    className={`bg-white rounded-lg shadow p-4 flex gap-3 items-center cursor-pointer hover:bg-gray-50 transition-colors ${selectedIds.has(item.id) ? "ring-2 ring-blue-500" : ""
+                                    className={`bg-white rounded-lg shadow p-4 flex gap-3 items-center cursor-pointer list-item-interactive ${expiryClass} ${selectedIds.has(item.id) ? "ring-2 ring-blue-500" : ""
                                         }`}
                                 >
                                     <div
@@ -356,10 +364,10 @@ export default function ItemList({
                                             e.stopPropagation();
                                             setDeleteTarget(item.id);
                                         }}
-                                        className="text-red-500 hover:text-red-700 px-4 py-3 min-h-[44px] font-medium"
+                                        className="text-red-500 hover:text-red-700 hover:bg-red-50 px-4 py-3 min-h-[44px] min-w-[44px] font-medium rounded-lg transition-colors"
                                         aria-label={`${item.name}を削除`}
                                     >
-                                        削除
+                                        🗑️
                                     </button>
                                 </li>
                             );

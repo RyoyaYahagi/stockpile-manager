@@ -174,14 +174,14 @@ export default function EditItemModal({
 
     return (
         <div
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 modal-backdrop"
             onClick={handleClose}
             role="dialog"
             aria-modal="true"
             aria-labelledby="edit-item-title"
         >
             <div
-                className="bg-white rounded-xl p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto"
+                className="bg-white rounded-xl p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto modal-content"
                 onClick={(e) => e.stopPropagation()}
             >
                 <h2 id="edit-item-title" className="text-xl font-bold mb-4 text-gray-900">備蓄品を編集</h2>
@@ -321,16 +321,16 @@ export default function EditItemModal({
                         <button
                             type="button"
                             onClick={handleClose}
-                            className="flex-1 px-4 py-3 min-h-[44px] border rounded-lg hover:bg-gray-50 text-gray-900 font-medium"
+                            className="btn-secondary flex-1"
                         >
-                            キャンセル
+                            やめる
                         </button>
                         <button
                             type="submit"
                             disabled={isSubmitting}
-                            className="flex-1 px-4 py-3 min-h-[44px] bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 font-medium"
+                            className="btn-primary flex-1 disabled:opacity-50"
                         >
-                            {isSubmitting ? "保存中..." : "保存"}
+                            {isSubmitting ? "保存中..." : "保存する"}
                         </button>
                     </div>
                 </form>

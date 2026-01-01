@@ -9,7 +9,7 @@ interface ConfirmModalProps {
     confirmLabel?: string;
 }
 
-export default function ConfirmModal({ message, onConfirm, onCancel, confirmLabel = "削除" }: ConfirmModalProps) {
+export default function ConfirmModal({ message, onConfirm, onCancel, confirmLabel = "削除する" }: ConfirmModalProps) {
     // Escapeキーで閉じる
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -23,14 +23,14 @@ export default function ConfirmModal({ message, onConfirm, onCancel, confirmLabe
 
     return (
         <div
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 modal-backdrop"
             onClick={onCancel}
             role="dialog"
             aria-modal="true"
             aria-labelledby="confirm-title"
         >
             <div
-                className="bg-white rounded-xl p-6 w-full max-w-sm mx-4 text-center"
+                className="bg-white rounded-xl p-6 w-full max-w-sm mx-4 text-center modal-content"
                 onClick={(e) => e.stopPropagation()}
             >
                 <h2 id="confirm-title" className="text-lg font-semibold mb-4 text-gray-900">確認</h2>
@@ -38,13 +38,13 @@ export default function ConfirmModal({ message, onConfirm, onCancel, confirmLabe
                 <div className="flex gap-3">
                     <button
                         onClick={onCancel}
-                        className="flex-1 px-4 py-3 min-h-[44px] border rounded-lg hover:bg-gray-50 text-gray-900 font-medium"
+                        className="btn-secondary flex-1"
                     >
-                        キャンセル
+                        やめる
                     </button>
                     <button
                         onClick={onConfirm}
-                        className="flex-1 px-4 py-3 min-h-[44px] bg-red-500 text-white rounded-lg hover:bg-red-600 font-medium"
+                        className="btn-danger flex-1"
                     >
                         {confirmLabel}
                     </button>

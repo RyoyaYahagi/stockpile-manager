@@ -248,14 +248,14 @@ export default function AddItemModal({
 
     return (
         <div
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 modal-backdrop"
             onClick={handleClose}
             role="dialog"
             aria-modal="true"
             aria-labelledby="add-item-title"
         >
             <div
-                className="bg-white rounded-xl p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto"
+                className="bg-white rounded-xl p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto modal-content"
                 onClick={(e) => e.stopPropagation()}
             >
                 <h2 id="add-item-title" className="text-xl font-bold mb-4 text-gray-900">備蓄品を追加</h2>
@@ -424,16 +424,16 @@ export default function AddItemModal({
                         <button
                             type="button"
                             onClick={onClose}
-                            className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50 text-gray-900"
+                            className="btn-secondary flex-1"
                         >
-                            キャンセル
+                            やめる
                         </button>
                         <button
                             type="submit"
                             disabled={isSubmitting}
-                            className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
+                            className="btn-primary flex-1 disabled:opacity-50"
                         >
-                            {isSubmitting ? "保存中..." : "保存"}
+                            {isSubmitting ? "保存中..." : "保存する"}
                         </button>
                     </div>
                 </form>
