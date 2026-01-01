@@ -65,8 +65,8 @@ export default function FamilyInviteModal({ onClose }: FamilyInviteModalProps) {
     };
 
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl max-w-sm w-full shadow-xl">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 modal-backdrop">
+            <div className="bg-white rounded-2xl max-w-sm w-full shadow-xl modal-content">
                 <div className="p-6">
                     <div className="flex justify-between items-center mb-4">
                         <h2 className="text-xl font-bold text-gray-900">👨‍👩‍👧‍👦 家族を招待</h2>
@@ -126,7 +126,7 @@ export default function FamilyInviteModal({ onClose }: FamilyInviteModalProps) {
                                                 {member.displayName.charAt(0)}
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <p className="font-medium truncate">{member.displayName}</p>
+                                                <p className="font-medium text-gray-900 truncate">{member.displayName}</p>
                                                 {member.email && (
                                                     <p className="text-xs text-gray-500 truncate">{member.email}</p>
                                                 )}

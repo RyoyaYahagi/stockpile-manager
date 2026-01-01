@@ -196,15 +196,17 @@ export default function ItemList({
                     )}
                     <button
                         onClick={() => setIsImportModalOpen(true)}
-                        className="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm"
+                        className="btn-secondary text-sm flex items-center gap-1"
                     >
-                        📥 インポート
+                        <span>📥</span>
+                        <span>インポート</span>
                     </button>
                     <button
                         onClick={() => setIsAddModalOpen(true)}
-                        className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+                        className="btn-primary flex items-center gap-1"
                     >
-                        + 追加
+                        <span>＋</span>
+                        <span>備蓄品を追加</span>
                     </button>
                 </div>
             </div>
@@ -237,8 +239,9 @@ export default function ItemList({
                                     e.stopPropagation();
                                     setDeleteBagTarget(bag.id);
                                 }}
-                                className="absolute right-1.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-red-500 text-white text-xs hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                                className="absolute right-0.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-red-500 text-white text-sm font-medium hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
                                 title="この袋を削除"
+                                aria-label={`${bag.name}を削除`}
                             >
                                 ×
                             </button>
@@ -257,27 +260,44 @@ export default function ItemList({
             </div>
 
             {sortedItems.length === 0 ? (
-                <div className="text-center py-12 text-gray-700">
-                    <p className="text-4xl mb-4">📦</p>
-                    <p>
-                        {activeTab === "ALL"
-                            ? "備蓄品がありません"
-                            : "この袋には備蓄品がありません"}
-                    </p>
-                    {activeTab === "ALL" && (
-                        <p className="text-sm">「+ 追加」ボタンで備蓄品を登録しましょう</p>
-                    )}
+                <div className="tab-content">
+                    <div className="text-center py-16">
+                        <div className="text-6xl mb-4">📦</div>
+                        <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                            {activeTab === "ALL"
+                                ? "備蓄品がありません"
+                                : "この袋には備蓄品がありません"}
+                        </h3>
+                        <p className="text-gray-600 mb-6">
+                            {activeTab === "ALL"
+                                ? "まずは備蓄品を登録しましょう"
+                                : "他の袋から移動するか、新しく追加してください"}
+                        </p>
+                        {activeTab === "ALL" && (
+                            <button
+                                onClick={() => setIsAddModalOpen(true)}
+                                className="bg-blue-500 text-white px-6 py-3 rounded-full font-medium hover:bg-blue-600 transition-colors shadow-md"
+                            >
+                                + 備蓄品を追加
+                            </button>
+                        )}
+                    </div>
                 </div>
             ) : (
-                <div className="space-y-3">
+                <div className="space-y-3 tab-content">
+
                     <div className="flex items-center gap-2 px-2 mb-2">
-                        <input
-                            type="checkbox"
-                            checked={isAllSelected}
-                            onChange={() => toggleSelectAll(sortedItems)}
-                            className="w-5 h-5 rounded border-gray-300"
-                        />
-                        <span className="text-sm text-gray-600">すべて選択</span>
+                        <label className="flex items-center gap-3 cursor-pointer min-h-[44px]">
+                            <div className="w-11 h-11 flex items-center justify-center">
+                                <input
+                                    type="checkbox"
+                                    checked={isAllSelected}
+                                    onChange={() => toggleSelectAll(sortedItems)}
+                                    className="w-5 h-5 rounded border-gray-400 accent-blue-500"
+                                />
+                            </div>
+                            <span className="text-sm text-gray-700 font-medium">すべて選択</span>
+                        </label>
                     </div>
 
                     <ul className="space-y-3">
@@ -285,14 +305,17 @@ export default function ItemList({
                             const daysLeft = item.expiryDate ? getDaysUntilExpiry(item.expiryDate) : null;
                             let statusClass = "text-gray-800";
                             let statusText = "";
+                            let expiryClass = "expiry-safe";
 
                             if (daysLeft !== null) {
                                 if (daysLeft < 0) {
                                     statusClass = "text-red-600 font-semibold";
                                     statusText = `（${Math.abs(daysLeft)}日経過）`;
+                                    expiryClass = "expiry-expired";
                                 } else if (daysLeft <= 7) {
                                     statusClass = "text-orange-600 font-semibold";
-                                    statusText = `（あと${daysLeft}日）`;
+                                    statusText = daysLeft === 0 ? "（今日まで）" : `（あと${daysLeft}日）`;
+                                    expiryClass = "expiry-imminent";
                                 }
                             }
 
@@ -300,7 +323,7 @@ export default function ItemList({
                                 <li
                                     key={item.id}
                                     onClick={() => setEditTarget(item)}
-                                    className={`bg-white rounded-lg shadow p-4 flex gap-3 items-center cursor-pointer hover:bg-gray-50 transition-colors ${selectedIds.has(item.id) ? "ring-2 ring-blue-500" : ""
+                                    className={`bg-white rounded-lg shadow p-4 flex gap-3 items-center cursor-pointer list-item-interactive ${expiryClass} ${selectedIds.has(item.id) ? "ring-2 ring-blue-500" : ""
                                         }`}
                                 >
                                     <div
@@ -308,28 +331,32 @@ export default function ItemList({
                                             e.stopPropagation();
                                             toggleSelect(item.id);
                                         }}
-                                        className="flex-shrink-0"
+                                        className="flex-shrink-0 w-11 h-11 flex items-center justify-center"
+                                        role="checkbox"
+                                        aria-checked={selectedIds.has(item.id)}
                                     >
                                         <input
                                             type="checkbox"
                                             checked={selectedIds.has(item.id)}
                                             onChange={() => { }} // 親のdivで制御
-                                            className="w-5 h-5 rounded border-gray-300"
+                                            className="w-5 h-5 rounded border-gray-400 accent-blue-500 pointer-events-none"
                                         />
                                     </div>
                                     <div className="flex-1">
                                         <h3 className="font-medium text-gray-900">
                                             {item.name}
                                             {item.quantity && item.quantity > 1 && (
-                                                <span className="text-gray-700"> × {item.quantity}</span>
+                                                <span className="text-gray-600 font-normal"> × {item.quantity}</span>
                                             )}
                                         </h3>
                                         <p className={statusClass}>
                                             期限: {item.expiryDate ? `${formatDate(item.expiryDate)} ${statusText}` : "期限なし"}
                                         </p>
-                                        <p className="text-sm text-gray-700">
+                                        <p className="text-sm text-gray-600">
                                             💼 {item.bag?.name || "未指定"}
-                                            {item.locationNote && ` / ${item.locationNote}`}
+                                            {item.locationNote && (
+                                                <span className="text-gray-500"> / {item.locationNote}</span>
+                                            )}
                                         </p>
                                     </div>
                                     <button
@@ -337,9 +364,10 @@ export default function ItemList({
                                             e.stopPropagation();
                                             setDeleteTarget(item.id);
                                         }}
-                                        className="text-red-500 hover:text-red-700 px-3 py-1"
+                                        className="text-red-500 hover:text-red-700 hover:bg-red-50 px-4 py-3 min-h-[44px] min-w-[44px] font-medium rounded-lg transition-colors"
+                                        aria-label={`${item.name}を削除`}
                                     >
-                                        削除
+                                        🗑️
                                     </button>
                                 </li>
                             );

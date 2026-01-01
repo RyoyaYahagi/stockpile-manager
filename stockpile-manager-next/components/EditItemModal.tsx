@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import type { Bag, Item } from "@/lib/db/schema";
 
 interface EditItemModalProps {
@@ -37,6 +37,23 @@ export default function EditItemModal({
             return [...prev, ...newBags];
         });
     }, [bags]);
+
+    // Escapeキーで閉じる
+    const handleClose = useCallback(() => {
+        if (!isSubmitting) {
+            onClose();
+        }
+    }, [isSubmitting, onClose]);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                handleClose();
+            }
+        };
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [handleClose]);
 
     const compressImage = (file: File, maxSizeKB: number = 900): Promise<string> => {
         return new Promise((resolve, reject) => {
@@ -156,9 +173,18 @@ export default function EditItemModal({
     };
 
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
-                <h2 className="text-xl font-bold mb-4 text-gray-900">備蓄品を編集</h2>
+        <div
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 modal-backdrop"
+            onClick={handleClose}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="edit-item-title"
+        >
+            <div
+                className="bg-white rounded-xl p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto modal-content"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <h2 id="edit-item-title" className="text-xl font-bold mb-4 text-gray-900">備蓄品を編集</h2>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
@@ -294,17 +320,17 @@ export default function EditItemModal({
                     <div className="flex gap-3 pt-2">
                         <button
                             type="button"
-                            onClick={onClose}
-                            className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50 text-gray-900"
+                            onClick={handleClose}
+                            className="btn-secondary flex-1"
                         >
-                            キャンセル
+                            やめる
                         </button>
                         <button
                             type="submit"
                             disabled={isSubmitting}
-                            className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
+                            className="btn-primary flex-1 disabled:opacity-50"
                         >
-                            {isSubmitting ? "保存中..." : "保存"}
+                            {isSubmitting ? "保存中..." : "保存する"}
                         </button>
                     </div>
                 </form>
