@@ -3,6 +3,26 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  /* HIG準拠: セマンティックカラー */
+  --text-primary: #1c1c1e;
+  --text-secondary: #3c3c43;
+  --text-tertiary: #636366;
+  /* アクションカラー統一ルール */
+  --action-primary: #007aff;
+  /* 追加・保存・メイン操作 */
+  --action-secondary: #8e8e93;
+  /* 補助操作・キャンセル */
+  --action-danger: #ff3b30;
+  /* 削除・危険操作 */
+  --action-success: #34c759;
+  /* 成功・完了 */
+  --action-warning: #ff9500;
+  /* 警告・注意 */
+  /* レガシー互換 */
+  --accent-blue: var(--action-primary);
+  --accent-green: var(--action-success);
+  --accent-orange: var(--action-warning);
+  --accent-red: var(--action-danger);
 }
 
 @theme inline {
@@ -16,11 +36,162 @@
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --text-primary: #f5f5f7;
+    --text-secondary: #a1a1a6;
+    --text-tertiary: #6e6e73;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* HIG準拠: フォーカス時のアウトライン */
+:focus-visible {
+  outline: 2px solid var(--accent-blue);
+  outline-offset: 2px;
+}
+
+/* タッチターゲット最小サイズ確保 */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* ========================================
+   モーダルトランジション（SHIG #63, #64）
+======================================== */
+.modal-backdrop {
+  animation: backdrop-fade-in 0.2s ease-out;
+}
+
+.modal-content {
+  animation: modal-slide-in 0.25s ease-out;
+}
+
+@keyframes backdrop-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-slide-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* ========================================
+   期限状況の視覚化（SHIG #28）
+======================================== */
+.expiry-expired {
+  background: linear-gradient(90deg, rgba(255, 59, 48, 0.15) 0%, transparent 100%);
+  border-left: 3px solid var(--action-danger);
+}
+
+.expiry-imminent {
+  background: linear-gradient(90deg, rgba(255, 149, 0, 0.12) 0%, transparent 100%);
+  border-left: 3px solid var(--action-warning);
+}
+
+.expiry-safe {
+  border-left: 3px solid transparent;
+}
+
+/* ========================================
+   リストアイテムホバー効果（SHIG #66）
+======================================== */
+.list-item-interactive {
+  transition: background-color 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+}
+
+.list-item-interactive:hover {
+  background-color: #f9fafb;
+}
+
+.list-item-interactive:active {
+  transform: scale(0.99);
+}
+
+/* ========================================
+   ボタン共通スタイル
+======================================== */
+.btn-primary {
+  background-color: var(--action-primary);
+  color: white;
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.btn-primary:hover {
+  background-color: #0066d6;
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+.btn-danger {
+  background-color: var(--action-danger);
+  color: white;
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.btn-danger:hover {
+  background-color: #e0352b;
+}
+
+.btn-secondary {
+  background-color: #f3f4f6;
+  color: #1f2937;
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  border: 1px solid #d1d5db;
+  transition: background-color 0.15s ease;
+}
+
+.btn-secondary:hover {
+  background-color: #e5e7eb;
+}
+
+/* ========================================
+   タブトランジション
+======================================== */
+.tab-content {
+  animation: tab-fade-in 0.2s ease-out;
+}
+
+@keyframes tab-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

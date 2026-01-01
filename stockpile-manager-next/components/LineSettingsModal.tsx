@@ -182,8 +182,8 @@ export default function LineSettingsModal({
     };
 
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 modal-backdrop">
+            <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto modal-content">
                 <h2 className="text-xl font-bold mb-4 text-gray-900">LINE通知設定</h2>
 
                 {/* 連携済みの場合 */}
@@ -333,7 +333,7 @@ export default function LineSettingsModal({
                     <button
                         type="button"
                         onClick={onClose}
-                        className="flex-1 px-4 py-2 border text-gray-700 rounded-lg hover:bg-gray-50"
+                        className="btn-secondary flex-1"
                     >
                         閉じる
                     </button>

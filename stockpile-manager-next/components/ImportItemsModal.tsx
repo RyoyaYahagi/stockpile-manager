@@ -120,8 +120,8 @@ export default function ImportItemsModal({
     };
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 modal-backdrop">
+            <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col modal-content">
                 {/* ヘッダー */}
                 <div className="px-6 py-4 border-b flex justify-between items-center">
                     <h2 className="text-lg font-semibold text-gray-900">📥 JSONインポート</h2>
@@ -218,16 +218,16 @@ export default function ImportItemsModal({
                 <div className="px-6 py-4 border-t flex gap-3">
                     <button
                         onClick={onClose}
-                        className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                        className="btn-secondary flex-1"
                     >
-                        キャンセル
+                        やめる
                     </button>
                     <button
                         onClick={handleImport}
                         disabled={previewItems.length === 0 || isLoading}
-                        className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                        className="btn-primary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        {isLoading ? "インポート中..." : `インポート (${previewItems.length}件)`}
+                        {isLoading ? "インポート中..." : `インポートする (${previewItems.length}件)`}
                     </button>
                 </div>
             </div>
