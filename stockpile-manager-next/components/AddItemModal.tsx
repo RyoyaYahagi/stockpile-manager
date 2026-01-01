@@ -19,7 +19,7 @@ export default function AddItemModal({
     onAddBag,
 }: AddItemModalProps) {
     const [name, setName] = useState("");
-    const [quantity, setQuantity] = useState(1);
+    const [quantity, setQuantity] = useState<string>("1");
     const [expiryDate, setExpiryDate] = useState("");
     const [bagId, setBagId] = useState("");
     const [locationNote, setLocationNote] = useState("");
@@ -196,7 +196,7 @@ export default function AddItemModal({
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     name: name.trim(),
-                    quantity,
+                    quantity: parseInt(quantity, 10) || 1,
                     expiryDate: expiryDate || null,
                     bagId: finalBagId || null,
                     locationNote: locationNote.trim() || null,
@@ -282,7 +282,7 @@ export default function AddItemModal({
                         <input
                             type="number"
                             value={quantity}
-                            onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+                            onChange={(e) => setQuantity(e.target.value)}
                             min={1}
                             max={99}
                             className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"

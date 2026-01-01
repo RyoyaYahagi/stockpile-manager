@@ -17,7 +17,7 @@ export default function EditItemModal({
     onSuccess,
 }: EditItemModalProps) {
     const [name, setName] = useState(item.name);
-    const [quantity, setQuantity] = useState(item.quantity || 1);
+    const [quantity, setQuantity] = useState<string>(item.quantity?.toString() || "1");
     const [expiryDate, setExpiryDate] = useState(item.expiryDate || "");
     const [bagId, setBagId] = useState(item.bagId || "");
     const [locationNote, setLocationNote] = useState(item.locationNote || "");
@@ -149,7 +149,7 @@ export default function EditItemModal({
                 body: JSON.stringify({
                     id: item.id,
                     name: name.trim(),
-                    quantity,
+                    quantity: parseInt(quantity, 10) || 1,
                     expiryDate: expiryDate || null,
                     bagId: bagId || null,
                     locationNote: locationNote.trim() || null,
@@ -208,7 +208,7 @@ export default function EditItemModal({
                         <input
                             type="number"
                             value={quantity}
-                            onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+                            onChange={(e) => setQuantity(e.target.value)}
                             min={1}
                             max={99}
                             className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
