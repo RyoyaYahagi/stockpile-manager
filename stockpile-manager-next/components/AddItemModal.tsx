@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import type { Bag, Item } from "@/lib/db/schema";
 
 interface AddItemModalProps {
@@ -33,6 +33,23 @@ export default function AddItemModal({
     const cameraInputRef = useRef<HTMLInputElement>(null);
     const libraryInputRef = useRef<HTMLInputElement>(null);
     const [showImagePicker, setShowImagePicker] = useState(false);
+
+    // Escapeキーで閉じる
+    const handleClose = useCallback(() => {
+        if (!isSubmitting) {
+            onClose();
+        }
+    }, [isSubmitting, onClose]);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                handleClose();
+            }
+        };
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [handleClose]);
 
     // props.bagsが更新されたらlocalBagsにも反映（重複除外）
     useEffect(() => {
@@ -230,9 +247,18 @@ export default function AddItemModal({
     };
 
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
-                <h2 className="text-xl font-bold mb-4 text-gray-900">備蓄品を追加</h2>
+        <div
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+            onClick={handleClose}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="add-item-title"
+        >
+            <div
+                className="bg-white rounded-xl p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <h2 id="add-item-title" className="text-xl font-bold mb-4 text-gray-900">備蓄品を追加</h2>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>

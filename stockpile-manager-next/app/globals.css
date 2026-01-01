@@ -3,6 +3,14 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  /* HIG準拠: セマンティックカラー */
+  --text-primary: #1c1c1e;
+  --text-secondary: #3c3c43;
+  --text-tertiary: #636366;
+  --accent-blue: #007aff;
+  --accent-green: #34c759;
+  --accent-orange: #ff9500;
+  --accent-red: #ff3b30;
 }
 
 @theme inline {
@@ -16,11 +24,28 @@
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --text-primary: #f5f5f7;
+    --text-secondary: #a1a1a6;
+    --text-tertiary: #6e6e73;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* HIG準拠: フォーカス時のアウトライン */
+:focus-visible {
+  outline: 2px solid var(--accent-blue);
+  outline-offset: 2px;
+}
+
+/* タッチターゲット最小サイズ確保 */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
 }
