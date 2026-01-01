@@ -126,7 +126,7 @@ export default function FamilyInviteModal({ onClose }: FamilyInviteModalProps) {
                                                 {member.displayName.charAt(0)}
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <p className="font-medium truncate">{member.displayName}</p>
+                                                <p className="font-medium text-gray-900 truncate">{member.displayName}</p>
                                                 {member.email && (
                                                     <p className="text-xs text-gray-500 truncate">{member.email}</p>
                                                 )}

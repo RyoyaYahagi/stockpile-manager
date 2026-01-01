@@ -164,12 +164,12 @@ body {
 
 .btn-secondary {
   background-color: #f3f4f6;
-  color: var(--text-primary);
+  color: #1f2937;
   min-height: 44px;
   padding: 0.5rem 1rem;
   border-radius: 0.5rem;
   font-weight: 500;
-  border: 1px solid #e5e7eb;
+  border: 1px solid #d1d5db;
   transition: background-color 0.15s ease;
 }
 
