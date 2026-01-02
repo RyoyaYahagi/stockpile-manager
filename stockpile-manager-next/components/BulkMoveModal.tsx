@@ -27,8 +27,14 @@ export default function BulkMoveModal({
     const actionLabel = actionType === 'move' ? '移動' : 'コピー';
 
     return (
-        <div className="modal-overlay" onClick={onClose}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4"
+            onClick={onClose}
+        >
+            <div
+                className="bg-white rounded-xl shadow-xl w-full max-w-md p-6"
+                onClick={(e) => e.stopPropagation()}
+            >
                 <h2 className="text-lg font-semibold mb-4">
                     {selectedCount}件を{actionLabel}
                 </h2>
