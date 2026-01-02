@@ -211,51 +211,41 @@ export default function ItemList({
                 </div>
             </div>
 
-            {/* タブメニュー */}
-            <div className="mb-4 overflow-x-auto">
-                <div className="flex space-x-2 pb-2">
-                    <button
-                        onClick={() => setActiveTab("ALL")}
-                        className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${activeTab === "ALL"
-                            ? "bg-blue-500 text-white"
-                            : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                            }`}
+            {/* 収納場所ドロップダウン */}
+            <div className="mb-4">
+                <div className="flex items-center gap-2">
+                    <label htmlFor="storage-select" className="text-sm font-medium text-gray-700">
+                        収納場所:
+                    </label>
+                    <select
+                        id="storage-select"
+                        value={activeTab}
+                        onChange={(e) => setActiveTab(e.target.value)}
+                        className="flex-1 px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                     >
-                        すべて
-                    </button>
-                    {bags.map((bag) => (
-                        <div key={bag.id} className="relative group flex items-center">
-                            <button
-                                onClick={() => setActiveTab(bag.id)}
-                                className={`px-4 py-2 pr-8 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${activeTab === bag.id
-                                    ? "bg-blue-500 text-white"
-                                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                                    }`}
-                            >
-                                {bag.name}
-                            </button>
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setDeleteBagTarget(bag.id);
-                                }}
-                                className="absolute right-0.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-red-500 text-white text-sm font-medium hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-                                title="この収納場所を削除"
-                                aria-label={`${bag.name}を削除`}
-                            >
-                                ×
-                            </button>
-                        </div>
-                    ))}
-                    <button
-                        onClick={() => setActiveTab("UNASSIGNED")}
-                        className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${activeTab === "UNASSIGNED"
-                            ? "bg-blue-500 text-white"
-                            : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                            }`}
-                    >
-                        未指定
-                    </button>
+                        <option value="ALL">すべて ({items.length}件)</option>
+                        {bags.map((bag) => {
+                            const count = items.filter(item => item.bagId === bag.id).length;
+                            return (
+                                <option key={bag.id} value={bag.id}>
+                                    {bag.name} ({count}件)
+                                </option>
+                            );
+                        })}
+                        <option value="UNASSIGNED">
+                            未指定 ({items.filter(item => !item.bagId).length}件)
+                        </option>
+                    </select>
+                    {activeTab !== "ALL" && activeTab !== "UNASSIGNED" && (
+                        <button
+                            onClick={() => setDeleteBagTarget(activeTab)}
+                            className="px-3 py-2 rounded-lg bg-red-100 text-red-600 hover:bg-red-200 transition-colors text-sm font-medium flex items-center gap-1"
+                            title="この収納場所を削除"
+                            aria-label="収納場所を削除"
+                        >
+                            🗑️ 削除
+                        </button>
+                    )}
                 </div>
             </div>
 
