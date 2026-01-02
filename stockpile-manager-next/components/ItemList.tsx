@@ -419,6 +419,7 @@ export default function ItemList({
                         onUpdateItem(updatedItem);
                         setEditTarget(null);
                     }}
+                    onAddBag={onAddBag}
                 />
             )}
 

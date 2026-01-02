@@ -8,6 +8,7 @@ interface EditItemModalProps {
     bags: Bag[];
     onClose: () => void;
     onSuccess: (updatedItem: Item & { bag: Bag | null }) => void;
+    onAddBag: (bag: Bag) => void;
 }
 
 export default function EditItemModal({
@@ -15,12 +16,15 @@ export default function EditItemModal({
     bags,
     onClose,
     onSuccess,
+    onAddBag,
 }: EditItemModalProps) {
     const [name, setName] = useState(item.name);
     const [quantity, setQuantity] = useState<string>(item.quantity?.toString() || "1");
     const [expiryDate, setExpiryDate] = useState(item.expiryDate || "");
     const [bagId, setBagId] = useState(item.bagId || "");
     const [locationNote, setLocationNote] = useState(item.locationNote || "");
+    const [newBagName, setNewBagName] = useState("");
+    const [showNewBagInput, setShowNewBagInput] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [localBags, setLocalBags] = useState(bags);
     const [isScanning, setIsScanning] = useState(false);
@@ -134,6 +138,23 @@ export default function EditItemModal({
         if (file) {
             handleOcrScan(file);
         }
+    };
+
+    const handleAddBag = async () => {
+        if (!newBagName.trim()) return;
+
+        const res = await fetch("/api/bags", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: newBagName.trim() }),
+        });
+
+        const newBag = await res.json();
+        setLocalBags(prev => [...prev, newBag]);
+        setBagId(newBag.id);
+        setNewBagName("");
+        setShowNewBagInput(false);
+        onAddBag(newBag); // 親に通知
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -290,18 +311,45 @@ export default function EditItemModal({
                         <label className="block text-sm font-medium text-gray-900 mb-1">
                             収納場所（任意）
                         </label>
-                        <select
-                            value={bagId}
-                            onChange={(e) => setBagId(e.target.value)}
-                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
-                        >
-                            <option value="">未指定</option>
-                            {localBags.map((bag) => (
-                                <option key={bag.id} value={bag.id}>
-                                    {bag.name}
-                                </option>
-                            ))}
-                        </select>
+                        <div className="flex gap-2">
+                            <select
+                                value={bagId}
+                                onChange={(e) => setBagId(e.target.value)}
+                                className="flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                            >
+                                <option value="">未指定</option>
+                                {localBags.map((bag) => (
+                                    <option key={bag.id} value={bag.id}>
+                                        {bag.name}
+                                    </option>
+                                ))}
+                            </select>
+                            <button
+                                type="button"
+                                onClick={() => setShowNewBagInput(!showNewBagInput)}
+                                className="px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
+                            >
+                                +新規
+                            </button>
+                        </div>
+                        {showNewBagInput && (
+                            <div className="flex gap-2 mt-2">
+                                <input
+                                    type="text"
+                                    value={newBagName}
+                                    onChange={(e) => setNewBagName(e.target.value)}
+                                    placeholder="新しい収納場所の名前"
+                                    className="flex-1 px-3 py-2 border rounded-lg text-gray-900"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={handleAddBag}
+                                    className="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                                >
+                                    追加
+                                </button>
+                            </div>
+                        )}
                     </div>
 
                     <div>
