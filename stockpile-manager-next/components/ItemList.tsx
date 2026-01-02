@@ -501,8 +501,8 @@ export default function ItemList({
                 />
             )}
 
-            {/* フローティングアクションバー */}
-            {selectedIds.size > 0 && (
+            {/* フローティングアクションバー（モーダル非表示時のみ） */}
+            {selectedIds.size > 0 && !bulkActionType && (
                 <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg p-4 z-50">
                     <div className="max-w-lg mx-auto">
                         <div className="text-center text-sm text-gray-600 mb-3">
