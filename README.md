@@ -12,10 +12,15 @@
 - 📊 期限順ソートで一覧表示
 - ⚠️ 期限切れ・期限間近の視覚的警告
 
-### 袋・場所管理
-- 🎒 複数の非常袋を管理（例: 玄関用、車載用）
-- 📍 場所メモで収納場所を記録
-- 🗑️ 袋の削除機能
+### 収納場所管理
+- 🎒 複数の収納場所を管理（例: 玄関用、車載用、非常持ち出し袋）
+- 📍 場所メモで詳細な位置を記録
+- 📦 アイテムの一括移動・コピー
+- 🗑️ 収納場所の削除機能
+
+### データ連携
+- 📥 JSONファイルからのデータインポート
+- 📤 （将来機能）データエクスポート
 
 ### ユーザー・家族共有
 - 👤 ゲストログイン機能（登録なしでお試し利用）
@@ -135,10 +140,11 @@ Vercel Cron Jobsで毎日 UTC 23:00（日本時間 08:00）に実行:
 stockpile-manager-next/
 ├── app/
 │   ├── api/           # APIエンドポイント
-│   │   ├── bags/      # 袋CRUD
+│   │   ├── bags/      # 収納場所CRUD
 │   │   ├── cron/      # 通知Cron
+│   │   ├── dashboard/ # 統合データ取得（高速化）
 │   │   ├── family/    # 家族管理
-│   │   ├── items/     # 備蓄品CRUD
+│   │   ├── items/     # 備蓄品CRUD・インポート
 │   │   ├── line/      # LINE Webhook・リンク
 │   │   ├── ocr/       # OCR処理
 │   │   └── user/      # ユーザー設定
@@ -146,6 +152,11 @@ stockpile-manager-next/
 │   ├── family/        # 家族セットアップ
 │   └── login/         # ログイン
 ├── components/        # UIコンポーネント
+│   ├── AddItemModal.tsx    # アイテム登録
+│   ├── BulkMoveModal.tsx   # 一括移動・コピー
+│   ├── ImportItemsModal.tsx # JSONインポート
+│   ├── ItemList.tsx        # アイテム一覧
+│   └── ...
 ├── lib/
 │   ├── auth/          # Stack Auth設定
 │   └── db/            # Drizzle スキーマ
