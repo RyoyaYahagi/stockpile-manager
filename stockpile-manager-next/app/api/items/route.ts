@@ -166,3 +166,56 @@ export async function PUT(request: NextRequest) {
         return NextResponse.json({ error: "Internal Server Error", details: String(error) }, { status: 500 });
     }
 }
+
+// 一括移動（複数アイテムのbagIdを一括更新）
+export async function PATCH(request: NextRequest) {
+    try {
+        const user = await stackServerApp.getUser();
+        if (!user) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        const dbUser = await db.query.users.findFirst({
+            where: eq(users.id, user.id),
+        });
+
+        if (!dbUser?.familyId) {
+            return NextResponse.json({ error: "No family" }, { status: 400 });
+        }
+        const familyId = dbUser.familyId;
+
+        const body = await request.json();
+        const { ids, bagId } = body;
+
+        if (!ids || !Array.isArray(ids) || ids.length === 0) {
+            return NextResponse.json({ error: "ids array is required" }, { status: 400 });
+        }
+
+        // 各アイテムを更新
+        const updatedItems = [];
+        for (const id of ids) {
+            await db.update(items)
+                .set({ bagId: bagId || null })
+                .where(
+                    and(
+                        eq(items.id, id),
+                        eq(items.familyId, familyId)
+                    )
+                );
+
+            const itemWithBag = await db.query.items.findFirst({
+                where: eq(items.id, id),
+                with: { bag: true },
+            });
+
+            if (itemWithBag) {
+                updatedItems.push(itemWithBag);
+            }
+        }
+
+        return NextResponse.json({ success: true, items: updatedItems });
+    } catch (error) {
+        console.error('[API] PATCH items error:', error);
+        return NextResponse.json({ error: "Internal Server Error", details: String(error) }, { status: 500 });
+    }
+}

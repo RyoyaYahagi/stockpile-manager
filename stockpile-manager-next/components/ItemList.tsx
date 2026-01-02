@@ -6,6 +6,7 @@ import AddItemModal from "./AddItemModal";
 import EditItemModal from "./EditItemModal";
 import ConfirmModal from "./ConfirmModal";
 import ImportItemsModal from "./ImportItemsModal";
+import BulkMoveModal from "./BulkMoveModal";
 
 interface ItemListProps {
     items: (Item & { bag: Bag | null })[];
@@ -42,6 +43,9 @@ export default function ItemList({
     // 収納場所削除用
     const [deleteBagTarget, setDeleteBagTarget] = useState<string | null>(null);
     const [isDeletingBag, setIsDeletingBag] = useState(false);
+
+    // 一括移動・コピー用
+    const [bulkActionType, setBulkActionType] = useState<'move' | 'copy' | null>(null);
 
     const handleDeleteBag = async () => {
         if (!deleteBagTarget) return;
@@ -127,6 +131,81 @@ export default function ItemList({
         }
     };
 
+    // 一括移動
+    const handleBulkMove = async (targetBagId: string | null) => {
+        const idsToMove = Array.from(selectedIds);
+        const targetBag = targetBagId ? bags.find(b => b.id === targetBagId) || null : null;
+
+        // 楽観的更新
+        idsToMove.forEach(id => {
+            const item = items.find(i => i.id === id);
+            if (item) {
+                onUpdateItem({ ...item, bagId: targetBagId, bag: targetBag });
+            }
+        });
+
+        setSelectedIds(new Set());
+        setBulkActionType(null);
+
+        // APIで一括更新
+        try {
+            const res = await fetch('/api/items', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: idsToMove, bagId: targetBagId }),
+            });
+            if (!res.ok) {
+                console.error('Bulk move failed');
+                alert('一部の移動に失敗した可能性があります。ページを再読み込みしてください。');
+            }
+        } catch (error) {
+            console.error('Bulk move error', error);
+            alert('移動に失敗しました。ページを再読み込みしてください。');
+        }
+    };
+
+    // 一括コピー
+    const handleBulkCopy = async (targetBagId: string | null) => {
+        const idsToCopy = Array.from(selectedIds);
+        const itemsToCopy = items.filter(item => idsToCopy.includes(item.id));
+
+        setBulkActionType(null);
+        setSelectedIds(new Set());
+
+        // APIで各アイテムをコピー
+        try {
+            for (const item of itemsToCopy) {
+                const res = await fetch('/api/items', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: item.name,
+                        quantity: item.quantity,
+                        expiryDate: item.expiryDate,
+                        bagId: targetBagId,
+                        locationNote: item.locationNote,
+                    }),
+                });
+                if (res.ok) {
+                    const newItem = await res.json();
+                    const targetBag = targetBagId ? bags.find(b => b.id === targetBagId) || null : null;
+                    onAddItem({ ...newItem, bag: targetBag });
+                }
+            }
+        } catch (error) {
+            console.error('Bulk copy error', error);
+            alert('一部のコピーに失敗した可能性があります');
+        }
+    };
+
+    const handleBulkAction = (targetBagId: string | null) => {
+        if (bulkActionType === 'move') {
+            handleBulkMove(targetBagId);
+        } else if (bulkActionType === 'copy') {
+            handleBulkCopy(targetBagId);
+        }
+    };
+
     const toggleSelect = (id: string) => {
         const newSelected = new Set(selectedIds);
         if (newSelected.has(id)) {
@@ -186,14 +265,6 @@ export default function ItemList({
                     備蓄品一覧 ({items.length}件)
                 </h2>
                 <div className="flex gap-2">
-                    {selectedIds.size > 0 && (
-                        <button
-                            onClick={() => setIsBulkDeleteConfirmOpen(true)}
-                            className="bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition-colors text-sm"
-                        >
-                            {selectedIds.size}件を削除
-                        </button>
-                    )}
                     <button
                         onClick={() => setIsImportModalOpen(true)}
                         className="btn-secondary text-sm flex items-center gap-1"
@@ -418,6 +489,56 @@ export default function ItemList({
                     onClose={() => setIsImportModalOpen(false)}
                     onSuccess={handleImportSuccess}
                 />
+            )}
+
+            {bulkActionType && (
+                <BulkMoveModal
+                    bags={bags}
+                    selectedCount={selectedIds.size}
+                    actionType={bulkActionType}
+                    onConfirm={handleBulkAction}
+                    onClose={() => setBulkActionType(null)}
+                />
+            )}
+
+            {/* フローティングアクションバー（モーダル非表示時のみ） */}
+            {selectedIds.size > 0 && !bulkActionType && (
+                <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg p-4 z-50">
+                    <div className="max-w-lg mx-auto">
+                        <div className="text-center text-sm text-gray-600 mb-3">
+                            ✓ {selectedIds.size}件選択中
+                        </div>
+                        <div className="flex gap-3 justify-center">
+                            <button
+                                onClick={() => setBulkActionType('move')}
+                                className="flex-1 max-w-32 py-3 px-4 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
+                            >
+                                <span>📦</span>
+                                <span>移動</span>
+                            </button>
+                            <button
+                                onClick={() => setBulkActionType('copy')}
+                                className="flex-1 max-w-32 py-3 px-4 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 transition-colors flex items-center justify-center gap-2"
+                            >
+                                <span>📋</span>
+                                <span>コピー</span>
+                            </button>
+                            <button
+                                onClick={() => setIsBulkDeleteConfirmOpen(true)}
+                                className="flex-1 max-w-32 py-3 px-4 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors flex items-center justify-center gap-2"
+                            >
+                                <span>🗑️</span>
+                                <span>削除</span>
+                            </button>
+                        </div>
+                        <button
+                            onClick={() => setSelectedIds(new Set())}
+                            className="w-full mt-3 py-2 text-gray-500 text-sm hover:text-gray-700 transition-colors"
+                        >
+                            選択を解除
+                        </button>
+                    </div>
+                </div>
             )}
         </div>
     );
