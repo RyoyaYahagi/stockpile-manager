@@ -28,35 +28,23 @@ export default function Dashboard() {
 
     const fetchData = useCallback(async () => {
         try {
-            // ユーザーデータを取得
-            const userRes = await fetch("/api/user");
-            const userData = await userRes.json();
+            // 統合APIで全データを一括取得
+            const res = await fetch("/api/dashboard");
+            const data = await res.json();
 
-            if (!userData.familyId) {
+            if (data.needsFamilySetup) {
                 router.push("/family/setup");
                 return;
             }
 
-            setFamilyId(userData.familyId);
-            setFamilyName(userData.familyName || "家族");
-            setLineUserId(userData.lineUserId);
+            setFamilyId(data.user.familyId);
+            setFamilyName(data.family?.familyName || "家族");
+            setLineUserId(data.user.lineUserId);
+            setItems(data.items);
+            setBags(data.bags);
 
-            // 備蓄品と袋、家族情報を取得
-            const [itemsRes, bagsRes, familyRes] = await Promise.all([
-                fetch("/api/items"),
-                fetch("/api/bags"),
-                fetch("/api/family"),
-            ]);
-
-            const itemsData = await itemsRes.json();
-            const bagsData = await bagsRes.json();
-            const familyData = await familyRes.json();
-
-            setItems(itemsData);
-            setBags(bagsData);
-            // 家族のlineGroupIdを取得
-            if (familyData.lineGroupId) {
-                setLineGroupId(familyData.lineGroupId);
+            if (data.family?.lineGroupId) {
+                setLineGroupId(data.family.lineGroupId);
             }
         } catch (error) {
             console.error("Error fetching data:", error);
