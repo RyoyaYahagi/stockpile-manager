@@ -288,7 +288,7 @@ export default function EditItemModal({
 
                     <div>
                         <label className="block text-sm font-medium text-gray-900 mb-1">
-                            袋（任意）
+                            収納場所（任意）
                         </label>
                         <select
                             value={bagId}

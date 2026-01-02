@@ -39,14 +39,14 @@ export default function ItemList({
     const [isBulkDeleteConfirmOpen, setIsBulkDeleteConfirmOpen] = useState(false);
     const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
-    // 袋削除用
+    // 収納場所削除用
     const [deleteBagTarget, setDeleteBagTarget] = useState<string | null>(null);
     const [isDeletingBag, setIsDeletingBag] = useState(false);
 
     const handleDeleteBag = async () => {
         if (!deleteBagTarget) return;
 
-        // 削除対象の袋を保持（ロールバック用）
+        // 削除対象の収納場所を保持（ロールバック用）
         const targetBagId = deleteBagTarget;
         const targetBag = bags.find(b => b.id === targetBagId);
         const previousTab = activeTab;
@@ -65,14 +65,14 @@ export default function ItemList({
                 // API失敗時はロールバック
                 console.error("Delete bag failed");
                 if (targetBag) {
-                    // 袋を再追加（簡易的なロールバック）
+                    // 収納場所を再追加（簡易的なロールバック）
                     // 注: 完全なロールバックには再fetchが必要だが、MVPでは簡易対応
-                    alert("袋の削除に失敗しました。ページを再読み込みしてください。");
+                    alert("収納場所の削除に失敗しました。ページを再読み込みしてください。");
                 }
             }
         } catch (error) {
             console.error("Delete bag error:", error);
-            alert("袋の削除に失敗しました。ページを再読み込みしてください。");
+            alert("収納場所の削除に失敗しました。ページを再読み込みしてください。");
         }
     };
 
@@ -240,7 +240,7 @@ export default function ItemList({
                                     setDeleteBagTarget(bag.id);
                                 }}
                                 className="absolute right-0.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-red-500 text-white text-sm font-medium hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-                                title="この袋を削除"
+                                title="この収納場所を削除"
                                 aria-label={`${bag.name}を削除`}
                             >
                                 ×
@@ -266,12 +266,12 @@ export default function ItemList({
                         <h3 className="text-xl font-semibold text-gray-900 mb-2">
                             {activeTab === "ALL"
                                 ? "備蓄品がありません"
-                                : "この袋には備蓄品がありません"}
+                                : "この収納場所には備蓄品がありません"}
                         </h3>
                         <p className="text-gray-600 mb-6">
                             {activeTab === "ALL"
                                 ? "まずは備蓄品を登録しましょう"
-                                : "他の袋から移動するか、新しく追加してください"}
+                                : "他の場所から移動するか、新しく追加してください"}
                         </p>
                         {activeTab === "ALL" && (
                             <button
@@ -404,7 +404,7 @@ export default function ItemList({
 
             {deleteBagTarget && (
                 <ConfirmModal
-                    message={`この袋を削除しますか？袋に入っている備蓄品は「未指定」に移動します。`}
+                    message={`この収納場所を削除しますか？ここにある備蓄品は「未指定」に移動します。`}
                     onConfirm={handleDeleteBag}
                     onCancel={() => setDeleteBagTarget(null)}
                 />

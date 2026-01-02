@@ -20,7 +20,7 @@ export const users = pgTable('users', {
     createdAt: timestamp('created_at').defaultNow(),
 });
 
-// 袋テーブル
+// 収納場所テーブル
 export const bags = pgTable('bags', {
     id: uuid('id').primaryKey().defaultRandom(),
     familyId: uuid('family_id').notNull().references(() => families.id, { onDelete: 'cascade' }),
