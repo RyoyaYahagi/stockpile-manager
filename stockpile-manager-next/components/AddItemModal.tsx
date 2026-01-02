@@ -175,7 +175,7 @@ export default function AddItemModal({
         try {
             let finalBagId = bagId;
 
-            // 新規袋の入力があり、まだ追加されていない（bagIdが空）場合は自動作成
+            // 新規収納場所の入力があり、まだ追加されていない（bagIdが空）場合は自動作成
             if (showNewBagInput && newBagName.trim() && !bagId) {
                 const bagRes = await fetch("/api/bags", {
                     method: "POST",
@@ -364,7 +364,7 @@ export default function AddItemModal({
 
                     <div>
                         <label className="block text-sm font-medium text-gray-900 mb-1">
-                            袋（任意）
+                            収納場所（任意）
                         </label>
                         <div className="flex gap-2">
                             <select
@@ -393,7 +393,7 @@ export default function AddItemModal({
                                     type="text"
                                     value={newBagName}
                                     onChange={(e) => setNewBagName(e.target.value)}
-                                    placeholder="新しい袋の名前"
+                                    placeholder="新しい収納場所の名前"
                                     className="flex-1 px-3 py-2 border rounded-lg text-gray-900"
                                 />
                                 <button
