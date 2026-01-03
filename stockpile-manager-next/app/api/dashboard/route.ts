@@ -7,17 +7,38 @@ import { NextResponse } from "next/server";
 export const runtime = 'edge';
 
 /**
- * 統合ダッシュボードAPI
- * 1回のリクエストで全データを返すことで読み込み時間を短縮
+ * ダッシュボード用統合API
+ * 1回のリクエストで全データを取得（コールドスタート対策）
  */
 export async function GET() {
     const user = await stackServerApp.getUser();
+
+    // 認証スキップが有効な場合はモックデータを返す
+    if (process.env.NEXT_PUBLIC_SKIP_AUTH === 'true') {
+        return NextResponse.json({
+            user: {
+                id: 'test-user-id',
+                familyId: 'test-family-id',
+                familyName: 'テスト家族',
+                displayName: 'テストユーザー',
+                lineUserId: null,
+            },
+            items: [],
+            bags: [],
+            family: {
+                inviteCode: 'TEST01',
+                familyName: 'テスト家族',
+                lineGroupId: null,
+                members: [],
+            },
+        });
+    }
 
     if (!user) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // ユーザー情報を取得（1回のみ）
+    // DBからユーザー情報を取得
     const dbUser = await db.query.users.findFirst({
         where: eq(users.id, user.id),
         with: { family: true },
@@ -36,17 +57,14 @@ export async function GET() {
                 id: user.id,
                 familyId: null,
                 familyName: null,
-                displayName: user.displayName,
-                lineUserId: null,
             },
             items: [],
             bags: [],
             family: null,
-            needsFamilySetup: true,
         });
     }
 
-    // 家族未設定の場合
+    // familyIdがない場合は早期リターン
     if (!dbUser.familyId) {
         return NextResponse.json({
             user: {
@@ -59,7 +77,6 @@ export async function GET() {
             items: [],
             bags: [],
             family: null,
-            needsFamilySetup: true,
         });
     }
 
@@ -102,6 +119,5 @@ export async function GET() {
                 email: m.email,
             })),
         } : null,
-        needsFamilySetup: false,
     });
 }

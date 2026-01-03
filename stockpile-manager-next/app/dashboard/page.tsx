@@ -28,21 +28,25 @@ export default function Dashboard() {
 
     const fetchData = useCallback(async () => {
         try {
-            // 統合APIで全データを一括取得
+            // 統合APIで全データを1回で取得（コールドスタート対策）
             const res = await fetch("/api/dashboard");
             const data = await res.json();
 
-            if (data.needsFamilySetup) {
+            if (data.error) {
+                console.error("Dashboard API error:", data.error);
+                return;
+            }
+
+            if (!data.user?.familyId) {
                 router.push("/family/setup");
                 return;
             }
 
             setFamilyId(data.user.familyId);
-            setFamilyName(data.family?.familyName || "家族");
+            setFamilyName(data.user.familyName || "家族");
             setLineUserId(data.user.lineUserId);
-            setItems(data.items);
-            setBags(data.bags);
-
+            setItems(data.items || []);
+            setBags(data.bags || []);
             if (data.family?.lineGroupId) {
                 setLineGroupId(data.family.lineGroupId);
             }
