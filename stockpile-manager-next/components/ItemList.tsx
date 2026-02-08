@@ -241,6 +241,31 @@ export default function ItemList({
         setIsImportModalOpen(false);
     };
 
+    const handleExport = () => {
+        // エクスポート用のデータ形式に変換
+        const exportData = items.map((item) => ({
+            name: item.name,
+            quantity: item.quantity || 1,
+            expiryDate: item.expiryDate || null,
+            bagName: item.bag?.name || null,
+            locationNote: item.locationNote || null,
+        }));
+
+        const jsonString = JSON.stringify(exportData, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        const now = new Date();
+        const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+        a.download = `stockpile_export_${dateStr}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
     // タブによるフィルタリング
     const filteredItems = items.filter((item) => {
         if (activeTab === "ALL") return true;
@@ -265,6 +290,14 @@ export default function ItemList({
                     備蓄品一覧 ({items.length}件)
                 </h2>
                 <div className="flex gap-2">
+                    <button
+                        onClick={handleExport}
+                        className="btn-secondary text-sm flex items-center gap-1"
+                        disabled={items.length === 0}
+                    >
+                        <span>📤</span>
+                        <span>エクスポート</span>
+                    </button>
                     <button
                         onClick={() => setIsImportModalOpen(true)}
                         className="btn-secondary text-sm flex items-center gap-1"
